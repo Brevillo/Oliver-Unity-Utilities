@@ -1,0 +1,19 @@
+{
+    "package": {
+        "name":"unityutilities",
+        "displayName": "Unity Utilities",
+        "version": "0.1.0",
+        "unityVersion": "",
+        "description": "A collection of small utilities for Unity.",
+        "url": "https://github.com/Brevillo/Oliver-Unity-Utilities"
+    },
+
+    "organization": {
+        "name": "oliverBeebe",
+        "displayName": "OliverBeebe"
+    },
+
+    "author": {
+        "name": "Oliver Beebe"
+    }
+}
