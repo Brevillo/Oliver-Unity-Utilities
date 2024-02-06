@@ -1,8 +1,9 @@
 {
-    "name": "OliverBeebe.UnityUtilities.Runtime",
-    "rootNamespace": "OliverBeebe.UnityUtilities.Runtime",
+    "name": "OliverBeebe.UnityUtilities.Runtime.Input",
+    "rootNamespace": "OliverBeebe.UnityUtilities.Runtime.Input",
     "references": [
-        ""
+        "GUID:75469ad4d38634e559750d17036d5f7c",
+        "GUID:3608f396ec3a11743a7a54e458d45088"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
