@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
-using OliverBeebe.UnityUtilities.Runtime;
 
 namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
@@ -9,6 +8,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
         private Button[] buttons;
         private InputActionAsset inputActions;
+
+        public bool UsingController => usingController;
+
+        private bool usingController;
 
         private void Awake() {
 
@@ -28,6 +31,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
             foreach (var button in buttons)
                 button.Init();
+
+            InputSystem.onActionChange += (obj, actionChange) => {
+
+                if (actionChange != InputActionChange.ActionPerformed) return;
+
+                var name = (obj as InputAction).activeControl.device.name;
+                usingController = !(name.Equals("Keyboard") || name.Equals("Mouse"));
+            };
         }
 
         private void Update() {
