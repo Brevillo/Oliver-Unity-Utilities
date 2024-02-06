@@ -97,6 +97,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
             public Vector2 Vector => Enabled && !forceNew ? _vector : Vector2.zero;
 
+            public event System.Action<Vector2> OnUpdated;
+
             #region Internals
 
             [Tooltip("If true, sets the value to zero when not pressed.")]
@@ -104,7 +106,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
             public override void Init() {
                 base.Init();
-                Action.performed += context => _vector = context.ReadValue<Vector2>();
+                Action.performed += context => {
+                    _vector = context.ReadValue<Vector2>();
+                    OnUpdated?.Invoke(_vector);
+                };
                 if (impulse) Action.canceled += context => _vector = Vector2.zero;
             }
 
