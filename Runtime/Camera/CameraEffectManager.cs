@@ -1,23 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace OliverBeebe.UnityUtilities.Runtime.Camera {
 
     /// <summary> Collects and manages camera effects so they can be combined. </summary>
     public class CameraEffectsManager {
 
-        private readonly List<ActiveEffect> effects = new();
-
         /// <summary> The current offset value of all the effects. </summary>
         public Vector2 Value { get; private set; }
 
         /// <summary> Add a shake to the effects manager. </summary>
-        public void AddShake(CameraShakeProfile shake)                          => effects.Add(shake.GetActiveEffect());
+        /// <returns> An active effect which can be used to remove the effect later. </returns>
+        public ActiveEffect AddShake(CameraShakeProfile shake)                          => AddEffect(shake.GetActiveEffect());
         /// <summary> Add a bounce in a certain direction to the effects manager. </summary>
-        public void AddBounce(CameraBounceProfile bounce, Vector2 direction)    => effects.Add(bounce.GetActiveEffect(direction));
+        /// <returns> An active effect which can be used to remove the effect later. </returns>
+        public ActiveEffect AddBounce(CameraBounceProfile bounce, Vector2 direction)    => AddEffect(bounce.GetActiveEffect(direction));
+
+        /// <summary> Remove a specific instance of an effect. </summary>
+        public void RemoveEffect(ActiveEffect effect) {
+            effects.Remove(effect);
+        }
 
         /// <summary> Removes all active effects from the manager. </summary>
         public void ClearEffects() => effects.Clear();
@@ -32,18 +34,27 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
             foreach (var effect in effects)
                 Value += effect.Evaluate();
 
-            effects.RemoveAll(ActiveEffect.IsCompleted);
+            effects.RemoveAll(EffectComplete);
 
             return Value;
         }
+
+        private readonly List<ActiveEffect> effects = new();
+
+        private ActiveEffect AddEffect(ActiveEffect effect) {
+            effects.Add(effect);
+            return effect;
+        }
+
+        private bool EffectComplete(ActiveEffect effect) => effect.Complete;
     }
 
+    /// <summary> Base class for all camera effects. </summary>
     public abstract class ActiveEffect {
 
-        public abstract Vector2 Evaluate();
-        protected abstract bool Complete { get; }
+        internal abstract Vector2 Evaluate();
 
-        public static bool IsCompleted(ActiveEffect effect) => effect.Complete;
+        public abstract bool Complete { get; }
     }
 
     [System.Serializable]
@@ -68,7 +79,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
 
         #endregion
 
-        public ActiveEffect GetActiveEffect() => new ActiveShake(this);
+        internal ActiveEffect GetActiveEffect() => new ActiveShake(this);
 
         private class ActiveShake : ActiveEffect {
 
@@ -80,9 +91,9 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
             private Vector2 prevTargetPosition, targetPosition;
             private float timer, moveTimeRemaining;
 
-            protected override bool Complete => timer >= profile.duration;
+            public override bool Complete => timer >= profile.duration;
 
-            public override Vector2 Evaluate() {
+            internal override Vector2 Evaluate() {
 
                 float dt = profile.unscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
 
@@ -128,7 +139,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
 
         #endregion
 
-        public ActiveEffect GetActiveEffect(Vector2 direction) => new ActiveBounce(this, direction);
+        internal ActiveEffect GetActiveEffect(Vector2 direction) => new ActiveBounce(this, direction);
 
         private class ActiveBounce : ActiveEffect {
 
@@ -141,9 +152,9 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
             private readonly Vector2 direction;
             private float timer;
 
-            protected override bool Complete => timer >= profile.duration;
+            public override bool Complete => timer >= profile.duration;
 
-            public override Vector2 Evaluate() {
+            internal override Vector2 Evaluate() {
 
                 float dt = profile.unscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
 
