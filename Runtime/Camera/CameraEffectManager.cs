@@ -100,7 +100,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
                 timer += dt;
 
                 // calculate current amplitude
-                float timePercent      = timer / profile.duration,
+                float timePercent      = profile.duration == 0 ? 0 : timer / profile.duration,
                       intensityPercent = profile.intensityCurve.Evaluate(timePercent),
                       amplitude        = intensityPercent * profile.amplitude;
 
@@ -161,7 +161,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera {
                 timer += dt;
 
                 // calculate current amplitude
-                float timePercent      = timer / profile.duration,
+                float timePercent      = profile.duration == 0 ? 0 : timer / profile.duration,
                       intensityPercent = profile.intensityCurve.Evaluate(timePercent),
                       amplitude        = intensityPercent * profile.amplitude;
 
