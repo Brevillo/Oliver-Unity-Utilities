@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 
 namespace OliverBeebe.UnityUtilities.Runtime {
 
-    [CreateAssetMenu(fileName = "New Sound Effect", menuName = "Sound Effect")]
+    [CreateAssetMenu(fileName = "New Sound Effect", menuName = "Oliver Utilities/Sound Effect")]
     public class SoundEffect : ScriptableObject {
 
         #if UNITY_EDITOR
