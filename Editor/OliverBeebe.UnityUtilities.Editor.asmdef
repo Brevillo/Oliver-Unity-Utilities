@@ -1,7 +1,9 @@
 {
     "name": "OliverBeebe.UnityUtilities.Editor",
     "rootNamespace": "OliverBeebe.UnityUtilities.Editor",
-    "references": [],
+    "references": [
+        "GUID:3608f396ec3a11743a7a54e458d45088"
+    ],
     "includePlatforms": [
         "Editor"
     ],
