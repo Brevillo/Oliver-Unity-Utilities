@@ -5,22 +5,22 @@ using System;
 namespace OliverBeebe.UnityUtilities.Runtime {
 
     [Serializable]
-    public class StateMachine<TContext> {
+    public class StateMachine {
 
         #if UNITY_EDITOR
         [UnityEngine.SerializeField, UnityEngine.TextArea(3, 3)] private string debug;
         #endif
 
-        public event Action<State<TContext>, State<TContext>> OnTransition;
+        public event Action<IState, IState> OnTransition;
 
-        private readonly State<TContext> firstState;
+        private readonly IState firstState;
         private readonly TransitionDictionary transitions;
 
-        public State<TContext> currentState     { get; private set; }
-        public State<TContext> previousState    { get; private set; }
-        public float stateDuration              { get; private set; }
+        public IState currentState  { get; private set; }
+        public IState previousState { get; private set; }
+        public float stateDuration  { get; private set; }
 
-        public StateMachine(State<TContext> firstState, TransitionDictionary transitions) {
+        public StateMachine(IState firstState, TransitionDictionary transitions) {
 
             this.firstState = firstState;
             this.transitions = transitions;
@@ -41,7 +41,7 @@ namespace OliverBeebe.UnityUtilities.Runtime {
             currentState.Enter();
         }
 
-        public void ChangeState(State<TContext> toState) {
+        public void ChangeState(IState toState) {
 
             if (currentState != null) {
                 currentState.Exit();
@@ -58,7 +58,7 @@ namespace OliverBeebe.UnityUtilities.Runtime {
             OnTransition?.Invoke(previousState, currentState);
         }
 
-        private void ChangeState(State<TContext> toState, Action behavior) {
+        private void ChangeState(IState toState, Action behavior) {
 
             currentState?.Exit();
 
@@ -88,30 +88,41 @@ namespace OliverBeebe.UnityUtilities.Runtime {
             #endif
         }
 
-        public class TransitionDictionary : Dictionary<State<TContext>, List<Transition>> { }
 
-        public readonly struct Transition {
-
-            public static Predicate<Transition> CanTransition = transition => transition.canTransition.Invoke();
-
-            public static implicit operator bool(Transition t) => t.exists;
-
-            private readonly bool exists;
-            private readonly TransitionDelegate canTransition;
-            public  readonly State<TContext> toState;
-            public  readonly Action behavior;
-
-            public Transition(State<TContext> toState, TransitionDelegate canTransition)
-                => (exists, this.toState, this.canTransition, this.behavior)
-                =  (true, toState, canTransition, null);
-
-            public Transition(State<TContext> toState, TransitionDelegate canTransition, Action behavior)
-                => (exists, this.toState, this.canTransition, this.behavior)
-                =  (true, toState, canTransition, behavior);
-        }
     }
 
+    public class TransitionDictionary : Dictionary<IState, List<Transition>> { }
+
     public delegate bool TransitionDelegate();
+
+    public readonly struct Transition {
+
+        public static Predicate<Transition> CanTransition = transition => transition.canTransition.Invoke();
+
+        public static implicit operator bool(Transition t) => t.exists;
+
+        private readonly bool exists;
+        private readonly TransitionDelegate canTransition;
+        public  readonly IState toState;
+        public  readonly Action behavior;
+
+        public Transition(IState toState, TransitionDelegate canTransition)
+            => (exists, this.toState, this.canTransition, this.behavior)
+            =  (true, toState, canTransition, null);
+
+        public Transition(IState toState, TransitionDelegate canTransition, Action behavior)
+            => (exists, this.toState, this.canTransition, this.behavior)
+            =  (true, toState, canTransition, behavior);
+    }
+
+    public interface IState
+    {
+        public void Enter();
+        public void Update();
+        public void Exit();
+        public void ManualEnter();
+        public void ManualExit();
+    }
 
     public abstract class State<TContext> {
 
