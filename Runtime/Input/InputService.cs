@@ -11,6 +11,15 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
 
         private Button[] buttons;
 
+        private bool usingController;
+        public bool UsingController => usingController;
+
+        public void EnableAllInputs(bool enable)
+        {
+            foreach (var button in buttons)
+                button.Enable(enable);
+        }
+
         protected override void Awake()
         {
             buttons = GetType()
@@ -23,6 +32,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
                 button.Init();
 
             inputActions.Enable();
+
+            InputSystem.onActionChange += (obj, actionChange) => {
+
+                if (actionChange != InputActionChange.ActionPerformed) return;
+
+                var name = (obj as InputAction).activeControl.device.name;
+                usingController = !(name.Equals("Keyboard") || name.Equals("Mouse"));
+            };
         }
 
         protected override void Update()
@@ -46,9 +63,9 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
 
             #region Public
 
-            public bool Pressed     => pressed;
-            public bool Down        => down;
-            public bool Released    => released;
+            public bool Pressed     => enabled && pressed;
+            public bool Down        => enabled && down;
+            public bool Released    => enabled && released;
 
             public event System.Action Performed, Canceled;
 
@@ -63,12 +80,20 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
                 forceNew = false;
             }
 
+            public void Enable(bool enable)
+            {
+                this.enabled = enable;
+            }
+
             #endregion
 
             #region Internals
 
+            private bool enabled;
+
             public virtual void Init()
             {
+                enabled = true;
                 actionReference.action.performed += OnPerformed;
                 actionReference.action.canceled  += OnCanceled;
             }
