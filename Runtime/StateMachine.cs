@@ -124,7 +124,7 @@ namespace OliverBeebe.UnityUtilities.Runtime {
         public void ManualExit();
     }
 
-    public abstract class State<TContext> {
+    public abstract class State<TContext> : IState {
 
         public State(TContext context) => this.context = context;
 
