@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 namespace OliverBeebe.UnityUtilities.Runtime.GameServices
 {
-    [CreateAssetMenu(fileName = GameServiceManagerResourceName, menuName = "Scriptables/Services/" + GameServiceManagerResourceName)]
+    [CreateAssetMenu(fileName = GameServiceManagerResourceName, menuName = "Oliver Utilities/" + GameServiceManagerResourceName)]
     public class GameServiceManager : ScriptableObject
     {
         [SerializeField] private List<Service> services;
