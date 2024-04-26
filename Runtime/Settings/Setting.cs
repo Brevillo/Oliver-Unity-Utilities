@@ -12,9 +12,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.Settings {
 
             set {
                 PlayerPrefs.SetFloat(name, ToFloat(value));
-                ValueChanged?.Invoke(value);
+                InvokeValueChanged();
             }
         }
+
+        public void InvokeValueChanged() => ValueChanged?.Invoke(Value);
 
         public event System.Action<TValue> ValueChanged;
 
