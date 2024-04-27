@@ -20,6 +20,9 @@ namespace OliverBeebe.UnityUtilities.Runtime {
 
         #if UNITY_EDITOR
 
+        [Tooltip("ONLY USE IN EDITOR SCRIPTS")]
+        public readonly SceneAsset GetSceneAsset_EditorOnly() => editorSceneAsset;
+
         [CustomPropertyDrawer(typeof(Scene))]
         private class SerializeableSceneAssetPropertyDrawer : PropertyDrawer {
 
