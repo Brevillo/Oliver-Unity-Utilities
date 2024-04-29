@@ -31,11 +31,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
         public Rect Rect
         {
-            get => new() {
+            get => new()
+            {
                 min = min + (Vector2)transform.position,
                 max = max + (Vector2)transform.position,
             };
-            set {
+
+            private set
+            {
                 transform.position = value.center;
                 min = value.min - (Vector2)transform.position;
                 max = value.max - (Vector2)transform.position;
