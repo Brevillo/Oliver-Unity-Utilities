@@ -29,7 +29,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
             color = Color.green;
         }
 
-        protected Rect rect
+        public Rect Rect
         {
             get => new() {
                 min = min + (Vector2)transform.position,
@@ -44,8 +44,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
         public Vector2 Clamp(Vector2 position)
         {
-            Vector2 bounds = (rect.size - defaultCameraSize * cameraSizeMultiple) / 2f,
-                    center = rect.center,
+            Vector2 bounds = (Rect.size - defaultCameraSize * cameraSizeMultiple) / 2f,
+                    center = Rect.center,
                     min = center - bounds,
                     max = center + bounds;
 
@@ -71,13 +71,13 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             // traversable area by the camera
             Gizmos.color = new(color.r, color.g, color.b, 0.15f);
-            Gizmos.DrawWireCube(rect.center, rect.size - defaultCameraSize * cameraSizeMultiple);
+            Gizmos.DrawWireCube(Rect.center, Rect.size - defaultCameraSize * cameraSizeMultiple);
         }
 
         private void DrawBorder()
         {
             Gizmos.color = color;
-            Gizmos.DrawWireCube(rect.center, rect.size);
+            Gizmos.DrawWireCube(Rect.center, Rect.size);
         }
 
         #endregion
@@ -111,7 +111,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             protected void OnSceneGUI()
             {
-                var rect = Bounds.rect;
+                var rect = Bounds.Rect;
 
                 Vector2 worldPos = Bounds.transform.position,
                         snapTo   = Bounds.snapTo,
@@ -192,10 +192,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                     maximum:  new(0, rect.yMax - camSize.y),
                     anchor:   new(rect.center.x, rect.yMax)).y;
 
-                if (EditorGUI.EndChangeCheck() || rect != Bounds.rect)
+                if (EditorGUI.EndChangeCheck() || rect != Bounds.Rect)
                 {
                     Undo.RecordObjects(new Object[] { Bounds, Bounds.transform }, "Room position and size adjustment.");
-                    Bounds.rect = rect;
+                    Bounds.Rect = rect;
                     EditorUtility.SetDirty(Bounds);
                 }
             }
