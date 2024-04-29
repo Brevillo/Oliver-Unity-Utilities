@@ -5,29 +5,17 @@ using UnityEditor;
 
 namespace OliverBeebe.UnityUtilities.Runtime.Camera
 {
+    [DisallowMultipleComponent]
     public abstract class CameraBound : MonoBehaviour
     {
-        private static readonly Vector2 defaultCameraSize = new(16, 9);
-
-        [Header("Camera Variables")]
-        [SerializeField] private float cameraSizeMultiple;
+        [SerializeField] private float cameraScale;
         [SerializeField] private Vector2 max;
         [SerializeField] private Vector2 min;
-
-        [Header("Gizmos")]
-        [SerializeField] private Vector2 snapTo;
+        [Space]
+        [SerializeField] private bool overrideColor;
         [SerializeField] private Color color;
-
-        private void Reset()
-        {
-            cameraSizeMultiple = 4f;
-
-            max = defaultCameraSize * cameraSizeMultiple / 2f;
-            min = defaultCameraSize * cameraSizeMultiple / -2f;
-
-            snapTo = new(1, 1);
-            color = Color.green;
-        }
+        [Space]
+        [SerializeField] private CameraBoundSettings settings;
 
         public Rect Rect
         {
@@ -39,7 +27,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             private set
             {
-                transform.position = value.center;
+                transform.position = new Vector3(value.center.x, value.center.y, transform.position.z);
                 min = value.min - (Vector2)transform.position;
                 max = value.max - (Vector2)transform.position;
             }
@@ -47,7 +35,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
         public Vector2 Clamp(Vector2 position)
         {
-            Vector2 bounds = (Rect.size - defaultCameraSize * cameraSizeMultiple) / 2f,
+            Vector2 bounds = (Rect.size - CameraSize) / 2f,
                     center = Rect.center,
                     min = center - bounds,
                     max = center + bounds;
@@ -57,78 +45,128 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                 Mathf.Clamp(position.y, min.y, max.y));
         }
 
-        public Vector2 CameraSize => defaultCameraSize * cameraSizeMultiple;
+        public Vector2 CameraSize => Settings.defaultCameraSize * cameraScale;
+
+        private CameraBoundSettings Settings
+        {
+            get
+            {
+                if (settings != null) return settings;
+
+                settings = ScriptableObject.CreateInstance<CameraBoundSettings>();
+                settings.name = "Default Settings";
+
+                return settings;
+            }
+        }
+
+        #region Editor
 
         #region Gizmos
 
-        private static bool alwaysShowBorder = true;
+        private Color GizmoColor => overrideColor ? color : Settings.defaultColor;
 
         private void OnDrawGizmos()
         {
-            if (alwaysShowBorder) DrawBorder();
+            if (Settings.alwaysShowBorder) DrawBorder();
         }
 
         private void OnDrawGizmosSelected()
         {
-            if (!alwaysShowBorder) DrawBorder();
+            if (!Settings.alwaysShowBorder) DrawBorder();
 
-            // traversable area by the camera
-            Gizmos.color = new(color.r, color.g, color.b, 0.15f);
-            Gizmos.DrawWireCube(Rect.center, Rect.size - defaultCameraSize * cameraSizeMultiple);
+            if (Settings.showCameraFreeArea)
+            {
+                Gizmos.color = GizmoColor * new Color(1, 1, 1, 0.15f);
+                Gizmos.DrawWireCube(transform.position, Rect.size - Settings.defaultCameraSize * cameraScale);
+            }
         }
 
         private void DrawBorder()
         {
-            Gizmos.color = color;
-            Gizmos.DrawWireCube(Rect.center, Rect.size);
+            Gizmos.color = GizmoColor;
+            Gizmos.DrawWireCube(transform.position, Rect.size);
         }
 
         #endregion
 
-        #region Editor
+        private void Reset()
+        {
+            cameraScale = Settings.defaultCameraScale;
+
+            max = CameraSize / 2f;
+            min = CameraSize / -2f;
+
+            overrideColor = false;
+            color = Color.green;
+        }
+
         #if UNITY_EDITOR
 
         [CustomEditor(typeof(CameraBound), true), CanEditMultipleObjects]
         protected class CameraBoundEditor : Editor
         {
-            private const float handleSize = 0.1f;
+            private const float minCameraSizeMultiple = 0.01f;
 
             private CameraBound Bounds => target as CameraBound;
 
+            private Vector2 Snap(Vector2 position)
+            {
+                Vector2 snap = Bounds.Settings.snapTo;
+
+                return new(
+                    snap.x == 0 ? position.x : Mathf.Round(position.x / snap.x) * snap.x,
+                    snap.y == 0 ? position.y : Mathf.Round(position.y / snap.y) * snap.y);
+            }
+
             public override void OnInspectorGUI()
             {
-                static void Toggle(string name, ref bool toggle)
+                void PropertyField(string property)
                 {
-                    if (GUILayout.Button($"{name}     {(toggle ? "ON" : "OFF")}"))
-                        toggle = !toggle;
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
                 }
 
-                GUI.enabled = false;
-                EditorGUILayout.Vector2Field("Size", Bounds.max - Bounds.min);
-                GUI.enabled = true;
+                Bounds.cameraScale = Mathf.Max(minCameraSizeMultiple,
+                    EditorGUILayout.FloatField(
+                        serializedObject.FindProperty(nameof(cameraScale)).displayName, Bounds.cameraScale));
 
-                base.OnInspectorGUI();
+                var rect = Bounds.Rect;
 
-                Toggle("Always Show Border", ref alwaysShowBorder);
+                Vector2 originalSize = rect.size;
+                Vector2 size = Vector2.Max(Bounds.CameraSize, Snap(EditorGUILayout.Vector2Field("Bound Size", originalSize)));
+
+                rect.size = size;
+                rect.position -= (size - originalSize) / 2f;
+
+                Bounds.Rect = rect;
+
+                PropertyField(nameof(overrideColor));
+
+                if (Bounds.overrideColor)
+                {
+                    PropertyField(nameof(color));
+                }
+
+                PropertyField(nameof(settings));
+
+                serializedObject.ApplyModifiedProperties();
             }
 
             protected void OnSceneGUI()
             {
                 var rect = Bounds.Rect;
 
-                Vector2 worldPos = Bounds.transform.position,
-                        snapTo   = Bounds.snapTo,
-                        camSize  = defaultCameraSize * Bounds.cameraSizeMultiple;
+                Vector3 worldPos = Bounds.transform.position;
+                Vector2 camSize = Bounds.CameraSize;
+                float handleSize = Bounds.Settings.handleSize;
 
-                Handles.color = Bounds.color;
+                Handles.color = Bounds.GizmoColor;
 
                 Vector2 DrawHandle(Vector2 position, Vector2 minimum, Vector2 maximum, Vector2 anchor)
                 {
-                    position = (Vector2)Handles.FreeMoveHandle(position, handleSize * HandleUtility.GetHandleSize(position), Vector2.one, Handles.DotHandleCap);
+                    Vector3 position3D = new(position.x, position.y, worldPos.z);
 
-                    Vector2 Snap(Vector2 position) => new(
-                        snapTo.x == 0 ? position.x : Mathf.Round(position.x / snapTo.x) * snapTo.x,
-                        snapTo.y == 0 ? position.y : Mathf.Round(position.y / snapTo.y) * snapTo.y);
+                    position = Handles.FreeMoveHandle(position3D, handleSize * HandleUtility.GetHandleSize(position3D), Vector2.one, Handles.DotHandleCap);
 
                     Vector2 Clamp(Vector2 position) => Vector2.Max(Vector2.Min(position, maximum), minimum);
 
@@ -195,9 +233,16 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                     maximum:  new(0, rect.yMax - camSize.y),
                     anchor:   new(rect.center.x, rect.yMax)).y;
 
+                // center
+                rect.center = DrawHandle(
+                    position: rect.center,
+                    minimum:  Vector2.negativeInfinity,
+                    maximum:  Vector2.positiveInfinity,
+                    anchor:   rect.center);
+
                 if (EditorGUI.EndChangeCheck() || rect != Bounds.Rect)
                 {
-                    Undo.RecordObjects(new Object[] { Bounds, Bounds.transform }, "Room position and size adjustment.");
+                    Undo.RecordObjects(new Object[] { Bounds, Bounds.transform }, "Camera Bound position and size adjustment.");
                     Bounds.Rect = rect;
                     EditorUtility.SetDirty(Bounds);
                 }
