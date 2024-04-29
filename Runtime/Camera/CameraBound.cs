@@ -111,15 +111,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             private CameraBound Bounds => target as CameraBound;
 
-            private Vector2 Snap(Vector2 position, float snapMultiple = 1f)
-            {
-                Vector2 snap = Bounds.Settings.snapTo * snapMultiple;
-
-                return new(
-                    snap.x == 0 ? position.x : Mathf.Round(position.x / snap.x) * snap.x,
-                    snap.y == 0 ? position.y : Mathf.Round(position.y / snap.y) * snap.y);
-            }
-
             public override void OnInspectorGUI()
             {
                 void PropertyField(string property) => EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
@@ -135,9 +126,16 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
                 // size
                 var rect = Bounds.Rect;
+                Vector2 snap = Bounds.Settings.snapTo;
+                Vector2 min = Bounds.CameraSize;
+
+                float SnapOrRound(float value, float snap, float min) => snap == 0 ? value : Mathf.Round((Mathf.Max(value, min) - min) / snap) * snap + min;
 
                 Vector2 originalSize = rect.size;
-                Vector2 size = Vector2.Max(Bounds.CameraSize, Snap(EditorGUILayout.Vector2Field("Bound Size", originalSize), 2f));
+                Vector2 serializedSize = EditorGUILayout.Vector2Field("Bound Size", originalSize);
+                Vector2 size = new(
+                    SnapOrRound(serializedSize.x, snap.x, min.x),
+                    SnapOrRound(serializedSize.y, snap.y, min.y));
 
                 rect.size = size;
                 rect.position -= (size - originalSize) / 2f;
@@ -165,6 +163,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                 var rect = Bounds.Rect;
 
                 Vector3 worldPos = Bounds.transform.position;
+                Vector2 snap = Bounds.Settings.snapTo;
                 Vector2 camSize = Bounds.CameraSize;
                 float handleSize = Bounds.Settings.handleSize;
 
@@ -175,6 +174,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                     Vector3 position3D = new(position.x, position.y, worldPos.z);
 
                     position = Handles.FreeMoveHandle(position3D, handleSize * HandleUtility.GetHandleSize(position3D), Vector2.one, Handles.DotHandleCap);
+
+                    Vector2 Snap(Vector2 position) => new(
+                        snap.x == 0 ? position.x : Mathf.Round(position.x / snap.x) * snap.x,
+                        snap.y == 0 ? position.y : Mathf.Round(position.y / snap.y) * snap.y);
 
                     Vector2 Clamp(Vector2 position) => Vector2.Max(Vector2.Min(position, maximum), minimum);
 
