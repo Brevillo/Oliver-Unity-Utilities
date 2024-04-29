@@ -111,9 +111,9 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             private CameraBound Bounds => target as CameraBound;
 
-            private Vector2 Snap(Vector2 position)
+            private Vector2 Snap(Vector2 position, float snapMultiple = 1f)
             {
-                Vector2 snap = Bounds.Settings.snapTo;
+                Vector2 snap = Bounds.Settings.snapTo * snapMultiple;
 
                 return new(
                     snap.x == 0 ? position.x : Mathf.Round(position.x / snap.x) * snap.x,
@@ -137,7 +137,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                 var rect = Bounds.Rect;
 
                 Vector2 originalSize = rect.size;
-                Vector2 size = Vector2.Max(Bounds.CameraSize, Snap(EditorGUILayout.Vector2Field("Bound Size", originalSize)));
+                Vector2 size = Vector2.Max(Bounds.CameraSize, Snap(EditorGUILayout.Vector2Field("Bound Size", originalSize), 2f));
 
                 rect.size = size;
                 rect.position -= (size - originalSize) / 2f;
