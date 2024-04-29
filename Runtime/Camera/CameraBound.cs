@@ -8,14 +8,15 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
     [DisallowMultipleComponent]
     public abstract class CameraBound : MonoBehaviour
     {
-        [SerializeField] private float cameraScale;
-        [SerializeField] private Vector2 max;
-        [SerializeField] private Vector2 min;
+        [Header("Camera Bound")]
+        [HideInInspector, SerializeField] private float cameraScale;
+        [HideInInspector, SerializeField] private Vector2 max;
+        [HideInInspector, SerializeField] private Vector2 min;
         [Space]
-        [SerializeField] private bool overrideColor;
-        [SerializeField] private Color color;
+        [HideInInspector, SerializeField] private bool overrideColor;
+        [HideInInspector, SerializeField] private Color color;
         [Space]
-        [SerializeField] private CameraBoundSettings settings;
+        [HideInInspector, SerializeField] private CameraBoundSettings settings;
 
         public Rect Rect
         {
@@ -103,7 +104,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
         #if UNITY_EDITOR
 
-        [CustomEditor(typeof(CameraBound), true), CanEditMultipleObjects]
+        [CustomEditor(typeof(CameraBound), true)]
         protected class CameraBoundEditor : Editor
         {
             private const float minCameraSizeMultiple = 0.01f;
@@ -121,15 +122,18 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             public override void OnInspectorGUI()
             {
-                void PropertyField(string property)
-                {
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
-                }
+                void PropertyField(string property) => EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
+                void Update() => serializedObject.ApplyModifiedProperties();
 
-                Bounds.cameraScale = Mathf.Max(minCameraSizeMultiple,
-                    EditorGUILayout.FloatField(
-                        serializedObject.FindProperty(nameof(cameraScale)).displayName, Bounds.cameraScale));
+                // base inspector
+                base.OnInspectorGUI();
 
+                // camera scale
+                PropertyField(nameof(cameraScale));
+                Update();
+                Bounds.cameraScale = Mathf.Max(minCameraSizeMultiple, Bounds.cameraScale);
+
+                // size
                 var rect = Bounds.Rect;
 
                 Vector2 originalSize = rect.size;
@@ -140,16 +144,18 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
                 Bounds.Rect = rect;
 
+                // color override
                 PropertyField(nameof(overrideColor));
-
+                Update();
                 if (Bounds.overrideColor)
                 {
                     PropertyField(nameof(color));
                 }
 
+                // settings
                 PropertyField(nameof(settings));
 
-                serializedObject.ApplyModifiedProperties();
+                Update();
             }
 
             protected void OnSceneGUI()
