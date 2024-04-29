@@ -156,6 +156,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
                 PropertyField(nameof(settings));
 
                 Update();
+
+                EditorUtility.SetDirty(Bounds);
             }
 
             protected void OnSceneGUI()
