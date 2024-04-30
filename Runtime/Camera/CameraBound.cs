@@ -65,7 +65,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
         #region Gizmos
 
-        private Color GizmoColor => overrideColor ? color : Settings.defaultColor;
+        public Color GizmoColor => overrideColor ? color : Settings.defaultColor;
 
         private void OnDrawGizmos()
         {
