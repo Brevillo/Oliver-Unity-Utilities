@@ -113,11 +113,17 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
             public override void OnInspectorGUI()
             {
-                void PropertyField(string property) => EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
+                void PropertyField(string property)
+                {
+                    Undo.RecordObject(target, $"Modified {property}");
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty(property));
+                }
                 void Update() => serializedObject.ApplyModifiedProperties();
 
                 // base inspector
                 base.OnInspectorGUI();
+
+                EditorGUI.BeginChangeCheck();
 
                 // camera scale
                 PropertyField(nameof(cameraScale));
@@ -155,7 +161,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.Camera
 
                 Update();
 
-                EditorUtility.SetDirty(Bounds);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(Bounds);
+                }
             }
 
             protected void OnSceneGUI()
