@@ -38,7 +38,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.GameServices
             public event Action<UnityEngine.SceneManagement.Scene, UnityEngine.SceneManagement.Scene> OnSceneChange;
             public event Action OnOnApplicationQuit;
 
-            private void Awake              () => SceneManager.activeSceneChanged += (from, to) => OnSceneChange?.Invoke(from, to);
+            private void Initialize         () => SceneManager.activeSceneChanged += (from, to) => OnSceneChange?.Invoke(from, to);
             private void Start              () => OnStart               ?.Invoke();
             private void Update             () => OnUpdate              ?.Invoke();
             private void LateUpdate         () => OnLateUpdate          ?.Invoke();
@@ -57,12 +57,12 @@ namespace OliverBeebe.UnityUtilities.Runtime.GameServices
                 instance.OnSceneChange          += OnSceneChange;
                 instance.OnOnApplicationQuit    += OnApplicationQuit;
 
-                Awake();
+                Initialize();
             }
 
             protected static MonoBehaviour Instance => instance != null ? instance : SpawnInstance();
 
-            protected virtual void Awake            () { }
+            protected virtual void Initialize       () { }
             protected virtual void Start            () { }
             protected virtual void Update           () { }
             protected virtual void LateUpdate       () { }

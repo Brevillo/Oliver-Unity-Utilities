@@ -20,7 +20,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
                 button.Enable(enable);
         }
 
-        protected override void Awake()
+        protected override void Initialize()
         {
             buttons = GetType()
                 .GetFields()
