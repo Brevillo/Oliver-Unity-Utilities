@@ -108,6 +108,7 @@ namespace OliverBeebe.UnityUtilities.Runtime {
                 customVolume = 1;
                 source.outputAudioMixerGroup = asset.Group;
                 source.loop = asset.Loop;
+                source.playOnAwake = false;
 
                 NoClipsWarningCheck();
             }
