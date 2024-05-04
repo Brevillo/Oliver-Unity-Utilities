@@ -69,6 +69,8 @@ namespace OliverBeebe.UnityUtilities.Runtime {
 
         public float EvaluateAt(float time) => curve.Evaluate(time) * valueScale;
 
+        public float CurrentValue => curve.Evaluate(timer) * valueScale;
+
         /// <summary> Starts the curve's timer. </summary>
         public void Start() => timer = 0;
         /// <summary> Stops the curve's timer. </summary>
