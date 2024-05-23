@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
-using UnityEngine.Serialization;
 
 namespace OliverBeebe.UnityUtilities.Runtime {
 
@@ -83,6 +82,7 @@ namespace OliverBeebe.UnityUtilities.Runtime {
             public readonly AudioSource source;
 
             private int clipIndex;
+            private readonly List<AudioClip> unusedRandomClips;
 
             private float _customPitch;
             public float customPitch {
@@ -110,6 +110,8 @@ namespace OliverBeebe.UnityUtilities.Runtime {
                 source.loop = asset.Loop;
                 source.playOnAwake = false;
 
+                unusedRandomClips = new();
+
                 NoClipsWarningCheck();
             }
 
@@ -121,20 +123,44 @@ namespace OliverBeebe.UnityUtilities.Runtime {
                 if (asset.AvoidOverlap && source.isPlaying) return;
 
                 // get clip
-                int index = asset.Sequential
-                    ? clipIndex++ % asset.Clips.Length
-                    : Random.Range(0, asset.Clips.Length);
-                var clip = asset.Clips[index];
+                var clip = GetClip();
 
                 if (clip == null) return;
 
                 // play sound
                 source.pitch = customPitch + Random.Range(asset.MinPitch, asset.MaxPitch);
                 source.volume = customVolume;
-
                 source.clip = clip;
+
                 if (asset.Loop && source.isPlaying) source.Stop();
                 source.Play();
+            }
+
+            private AudioClip GetClip()
+            {
+                if (asset.Clips.Length == 1)
+                {
+                    return asset.Clips[0];
+                }
+
+                if (asset.Sequential)
+                {
+                    clipIndex++;
+
+                    return asset.Clips[clipIndex % asset.Clips.Length];
+                }
+
+                if (unusedRandomClips.Count == 0)
+                {
+                    unusedRandomClips.AddRange(asset.Clips);
+                }
+
+                int index = Random.Range(0, unusedRandomClips.Count);
+
+                var clip = unusedRandomClips[index];
+                unusedRandomClips.RemoveAt(index);
+
+                return clip;
             }
 
             public void Stop() {
