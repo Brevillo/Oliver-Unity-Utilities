@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
+using UInputAction = UnityEngine.InputSystem.InputAction;
 
 namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
@@ -36,7 +37,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
                 if (actionChange != InputActionChange.ActionPerformed) return;
 
-                var name = (obj as InputAction).activeControl.device.name;
+                var name = (obj as UInputAction).activeControl.device.name;
                 usingController = !(name.Equals("Keyboard") || name.Equals("Mouse"));
             };
         }
@@ -76,7 +77,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input {
 
             #region Internals
 
-            protected InputAction Action => actionReference.action;
+            protected UInputAction Action => actionReference.action;
             public InputActionReference ActionReference => actionReference;
 
             public virtual void Init() {
