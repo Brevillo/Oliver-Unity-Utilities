@@ -12,7 +12,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
     {
         [SerializeField] private InputActionReference actionReference;
 
-        public bool Pressed => Action.WasPressedThisFrame() && !forceNew;
+        public bool Pressed => Enabled && pressed && !forceNew;
         public bool Down => Action.WasPerformedThisFrame();
         public bool Released => Action.WasReleasedThisFrame();
 
@@ -24,6 +24,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
         protected UInputAction Action => actionReference.action;
 
         protected bool forceNew;
+        private bool pressed;
 
         public void ForceNew()
         {
@@ -49,20 +50,19 @@ namespace OliverBeebe.UnityUtilities.Runtime.Input
 
         protected virtual void OnPerformed(UInputAction.CallbackContext context)
         {
-            forceNew = false;
+            if (!Enabled) return;
 
-            if (Enabled)
-            {
-                Performed?.Invoke();
-            }
+            forceNew = false;
+            pressed = true;
+            Performed?.Invoke();
         }
 
         protected virtual void OnCanceled(UInputAction.CallbackContext context)
         {
-            if (Enabled)
-            {
-                Canceled?.Invoke();
-            }
+            if (!Enabled) return;
+
+            pressed = false;
+            Canceled?.Invoke();
         }
     }
 
