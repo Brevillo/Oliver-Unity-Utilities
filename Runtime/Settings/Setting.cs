@@ -3,13 +3,7 @@ using System;
 
 namespace OliverBeebe.UnityUtilities.Runtime.Settings
 {
-    public interface ISetting
-    {
-        public void InvokeValueChanged();
-        public void ResetToDefault();
-    }
-
-    public abstract class Setting<TValue> : ScriptableObject, ISetting
+    public abstract class Setting<TValue> : ScriptableObject
     {
         [SerializeField] private TValue defaultValue;
 
