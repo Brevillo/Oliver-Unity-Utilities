@@ -1,9 +1,15 @@
 ﻿using UnityEngine;
 using System;
 
-namespace OliverBeebe.UnityUtilities.Runtime.Settings {
+namespace OliverBeebe.UnityUtilities.Runtime.Settings
+{
+    public interface ISetting
+    {
+        public void InvokeValueChanged();
+        public void ResetToDefault();
+    }
 
-    public abstract class Setting<TValue> : ScriptableObject
+    public abstract class Setting<TValue> : ScriptableObject, ISetting
     {
         [SerializeField] private TValue defaultValue;
 
@@ -19,6 +25,12 @@ namespace OliverBeebe.UnityUtilities.Runtime.Settings {
         }
 
         public void InvokeValueChanged() => ValueChanged?.Invoke(Value);
+
+        public void ResetToDefault()
+        {
+            PlayerPrefs.DeleteKey(name);
+            InvokeValueChanged();
+        }
 
         public event Action<TValue> ValueChanged;
 
