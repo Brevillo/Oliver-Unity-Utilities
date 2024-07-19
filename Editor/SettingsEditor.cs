@@ -2,22 +2,23 @@
 using UnityEditor;
 using OliverBeebe.UnityUtilities.Runtime.Settings;
 
-namespace OliverBeebe.UnityUtilities.Editor.Settings {
-
+namespace OliverBeebe.UnityUtilities.Editor.Settings
+{
     [CanEditMultipleObjects, CustomEditor(typeof(Setting<>), true)]
     public class SettingsEditor : UnityEditor.Editor
     {
         private const string
-            DefaultValueFieldName = "defaultValue",
-            SavedValueFieldName   = "Saved Value",
-            ResetButtonLabel      = "Reset Settings to Default Value",
-            ResetAllButtonLabel   = "Reset All Settings to Default Values";
+            DefaultValueFieldName   = "defaultValue",
+            OnValueChangedFieldName = "valueChanged",
+            SavedValueFieldName     = "Saved Value",
+            ResetButtonLabel        = "Reset Settings to Default Value",
+            ResetAllButtonLabel     = "Reset All Settings to Default Values";
 
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(DefaultValueFieldName));
+            serializedObject.Update();
 
-            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(DefaultValueFieldName));
 
             var valueProperty = target.GetType().GetProperty("Value");
             valueProperty.SetValue(target, valueProperty.GetValue(target, null) switch
@@ -29,15 +30,12 @@ namespace OliverBeebe.UnityUtilities.Editor.Settings {
                 _ => throw new System.ArgumentException(),
             });
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                target.GetType().GetMethod("InvokeValueChanged").Invoke(target, null);
-            }
-
             EditorGUILayout.Space(10);
 
             if (GUILayout.Button(ResetButtonLabel)) PlayerPrefs.DeleteKey(target.name);
             if (GUILayout.Button(ResetAllButtonLabel)) PlayerPrefs.DeleteAll();
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(OnValueChangedFieldName));
 
             serializedObject.ApplyModifiedProperties();
         }

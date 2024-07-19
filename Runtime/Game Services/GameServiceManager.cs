@@ -23,6 +23,13 @@ namespace OliverBeebe.UnityUtilities.Runtime.GameServices
 
             // initialize services
             var manager = Resources.Load<GameServiceManager>(GameServiceManagerResourceName);
+
+            if (manager == null)
+            {
+                Debug.LogWarning("No GameServiceManager was found in a resources folder!");
+                return null;
+            }
+
             foreach (var service in manager.services)
                 service.InitializeService();
 
@@ -38,7 +45,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.GameServices
             public event Action<UnityEngine.SceneManagement.Scene, UnityEngine.SceneManagement.Scene> OnSceneChange;
             public event Action OnOnApplicationQuit;
 
-            private void Initialize         () => SceneManager.activeSceneChanged += (from, to) => OnSceneChange?.Invoke(from, to);
+            private void Awake              () => SceneManager.activeSceneChanged += (from, to) => OnSceneChange?.Invoke(from, to);
             private void Start              () => OnStart               ?.Invoke();
             private void Update             () => OnUpdate              ?.Invoke();
             private void LateUpdate         () => OnLateUpdate          ?.Invoke();

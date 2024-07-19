@@ -1,11 +1,15 @@
 ﻿using UnityEngine;
 using System;
+using UnityEngine.Events;
 
 namespace OliverBeebe.UnityUtilities.Runtime.Settings
 {
     public abstract class Setting<TValue> : ScriptableObject
     {
         [SerializeField] private TValue defaultValue;
+        [SerializeField] private UnityEvent<TValue> valueChanged;
+
+        public event Action<TValue> ValueChanged;
 
         public TValue Value
         {
@@ -18,17 +22,27 @@ namespace OliverBeebe.UnityUtilities.Runtime.Settings
             }
         }
 
-        public void InvokeValueChanged() => ValueChanged?.Invoke(Value);
+        public void InvokeValueChanged()
+        {
+            var value = Value;
+
+            ValueChanged?.Invoke(value);
+            valueChanged.Invoke(value);
+        }
 
         public void ResetToDefault()
         {
             PlayerPrefs.DeleteKey(name);
+
             InvokeValueChanged();
         }
 
-        public event Action<TValue> ValueChanged;
-
         protected abstract TValue ToValue(float value);
         protected abstract float ToFloat(TValue value);
+
+        private void OnValidate()
+        {
+            InvokeValueChanged();
+        }
     }
 }
