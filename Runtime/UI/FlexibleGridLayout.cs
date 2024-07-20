@@ -12,23 +12,39 @@ using UnityEditor;
 #endif
 
 public class FlexibleGridLayout : LayoutGroup
-{    
+{
+    public enum Corner
+    {
+        UpperLeft = 0,
+        UpperRight = 1,
+        LowerLeft = 2,
+        LowerRight = 3,
+    }
+
+    public enum Axis
+    {
+        Horizontal = 0,
+        Vertical = 1,
+    }
+
     public enum Constraint
     {
         [Tooltip("Same number of rows and columns")]
-        Uniform,
-        [Tooltip("Matches the width of the rect transform")]
-        MatchWidth,
-        [Tooltip("Matches the height of the rect transform")]
-        MatchHeight,
+        Uniform = 0,
+        [Tooltip("Calculates rows and columns to make smallest grid size.")]
+        Tight = 1,
         [Tooltip("Choose a fixed number of rows")]
-        FixedRows,
+        FixedRows = 2,
         [Tooltip("Choose a fixed number of columns")]
-        FixedColumns,
+        FixedColumns = 3,
     }
 
     [Tooltip("Spacing between each grid cell")]
-    public Vector2 spacing;
+    public Vector2 spacing = Vector2.zero;
+    [Tooltip("Corner to start laying out children from")]
+    public Corner startCorner = Corner.UpperLeft;
+    [Tooltip("Axis to start laying out children along")]
+    public Axis startAxis = Axis.Horizontal;
     [Tooltip("Constraint for grid layout")]
     public Constraint constraint = Constraint.Uniform;
 
@@ -41,28 +57,16 @@ public class FlexibleGridLayout : LayoutGroup
     [Tooltip("Height of each grid cell")]
     public float cellHeight;
 
-    [Tooltip("Fixed number of rows")]
+    [Tooltip("Number of rows")]
     public int rows;
-    [Tooltip("Fixed number of columns")]
+    [Tooltip("Number of columns")]
     public int columns;
-
-    [SerializeField]
-    private Constraint previousConstraint;
 
     public event Action LayoutUpdated;
 
     public override void CalculateLayoutInputHorizontal()
     {
         base.CalculateLayoutInputHorizontal();
-
-        if (!(previousConstraint == Constraint.FixedRows || previousConstraint == Constraint.FixedColumns)
-            && (constraint == Constraint.FixedRows || constraint == Constraint.FixedColumns))
-        {
-            matchWidth = true;
-            matchHeight = true;
-        }
-
-        previousConstraint = constraint;
 
         if (rows <= 0)
         {
@@ -74,26 +78,30 @@ public class FlexibleGridLayout : LayoutGroup
             columns = 1;
         }
 
-        if (constraint == Constraint.MatchWidth || constraint == Constraint.MatchHeight || constraint == Constraint.Uniform)
+        if (constraint == Constraint.Uniform)
         {
-            float squareRoot = Mathf.Sqrt(transform.childCount);
+            float count = transform.childCount;
+            float squareRoot = Mathf.Sqrt(count);
             rows = columns = Mathf.CeilToInt(squareRoot);
+        }
+        else if (constraint == Constraint.Tight)
+        {
+            float count = transform.childCount;
+            float squareRoot = Mathf.Sqrt(count);
+            int greatestFactor = Mathf.CeilToInt(squareRoot);
+            int secondGreatestFactor = Mathf.CeilToInt(count / greatestFactor);
 
-            (matchWidth, matchHeight) = constraint switch
-            {
-                Constraint.MatchWidth => (true, false),
-                Constraint.MatchHeight => (false, true),
-                Constraint.Uniform => (true, true),
-                _ => throw new NotImplementedException(),
-            };
+            (columns, rows) = startAxis == Axis.Horizontal
+                ? (greatestFactor, secondGreatestFactor)
+                : (secondGreatestFactor, greatestFactor);
         }
 
-        if (constraint == Constraint.MatchWidth || constraint == Constraint.FixedColumns)
+        if (constraint == Constraint.FixedColumns)
         {
             rows = Mathf.CeilToInt((float)transform.childCount / columns);
         }
 
-        if (constraint == Constraint.MatchHeight || constraint == Constraint.FixedRows)
+        if (constraint == Constraint.FixedRows)
         {
             columns = Mathf.CeilToInt((float)transform.childCount / rows);
         }
@@ -101,26 +109,47 @@ public class FlexibleGridLayout : LayoutGroup
         if (matchWidth)
         {
             float parentWidth = rectTransform.rect.width;
-            cellWidth = parentWidth / columns - (spacing.x / columns * (columns - 1))
-                - ((float)padding.left / columns) - ((float)padding.right / columns);
+            float totalSpacing = spacing.x * (columns - 1);
+            float gridWidthForCells = parentWidth - totalSpacing - padding.horizontal;
+
+            cellWidth = gridWidthForCells / columns;
         }
 
         if (matchHeight)
         {
             float parentHeight = rectTransform.rect.height;
-            cellHeight = parentHeight / rows - (spacing.y / rows * (rows - 1))
-                - ((float)padding.top / rows) - ((float)padding.bottom / rows); ;
+            float totalSpacing = spacing.y * (rows - 1);
+            float gridHeightForCells = parentHeight - totalSpacing - padding.vertical;
+
+            cellHeight = gridHeightForCells / rows;
         }
+
+        float startOffsetX = GetStartOffset(0, columns * cellWidth + (columns - 1) * spacing.x);
+        float startOffsetY = GetStartOffset(1, rows * cellHeight + (rows - 1) * spacing.y);
+
+        int cornerX = (int)startCorner % 2;
+        int cornerY = (int)startCorner / 2;
 
         for (int i = 0; i < rectChildren.Count; i++)
         {
-            int rowCount = i / columns;
-            int columnCount = i % columns;
+            (int xIndex, int yIndex) = startAxis == Axis.Horizontal
+                ? (i % columns, i / columns)
+                : (i / rows, i % rows);
+
+            if (cornerX == 1)
+            {
+                xIndex = columns - 1 - xIndex;
+            }
+
+            if (cornerY == 1)
+            {
+                yIndex = rows - 1 - yIndex;
+            }
+
+            float xPos = startOffsetX + (cellWidth * xIndex) + (spacing.x * xIndex);
+            float yPos = startOffsetY + (cellHeight * yIndex) + (spacing.y * yIndex);
 
             var item = rectChildren[i];
-
-            float xPos = (cellWidth * columnCount) + (spacing.x * columnCount) + padding.left;
-            float yPos = (cellHeight * rowCount) + (spacing.y * rowCount) + padding.top;
 
             SetChildAlongAxis(item, 0, xPos, cellWidth);
             SetChildAlongAxis(item, 1, yPos, cellHeight);
@@ -142,6 +171,9 @@ public class FlexibleGridLayout : LayoutGroup
         private SerializedProperty
             paddingProp,
             spacingProp,
+            childAlignmentProp,
+            startCornerProp,
+            startAxisProp,
             constraintProp,
             matchWidthProp,
             cellWidthProp,
@@ -154,15 +186,18 @@ public class FlexibleGridLayout : LayoutGroup
         {
             SerializedProperty Find(string name) => serializedObject.FindProperty(name);
 
-            paddingProp     = Find(nameof(m_Padding));
-            spacingProp     = Find(nameof(spacing));
-            constraintProp  = Find(nameof(constraint));
-            matchWidthProp  = Find(nameof(matchWidth));
-            cellWidthProp   = Find(nameof(cellWidth));
-            matchHeightProp = Find(nameof(matchHeight));
-            cellHeightProp  = Find(nameof(cellHeight));
-            rowsProp        = Find(nameof(rows));
-            columnsProp     = Find(nameof(columns));
+            paddingProp         = Find(nameof(m_Padding));
+            spacingProp         = Find(nameof(spacing));
+            childAlignmentProp  = Find(nameof(m_ChildAlignment));
+            startCornerProp     = Find(nameof(startCorner));
+            startAxisProp       = Find(nameof(startAxis));
+            constraintProp      = Find(nameof(constraint));
+            matchWidthProp      = Find(nameof(matchWidth));
+            cellWidthProp       = Find(nameof(cellWidth));
+            matchHeightProp     = Find(nameof(matchHeight));
+            cellHeightProp      = Find(nameof(cellHeight));
+            rowsProp            = Find(nameof(rows));
+            columnsProp         = Find(nameof(columns));
         }
 
         private static void Property(SerializedProperty property, bool enabled = true)
@@ -176,18 +211,20 @@ public class FlexibleGridLayout : LayoutGroup
 
             Property(paddingProp);
             Property(spacingProp);
+            Property(startCornerProp);
+            Property(startAxisProp);
+            Property(childAlignmentProp);
             Property(constraintProp);
 
             var grid = target as FlexibleGridLayout;
-            bool showMatchWidthHeight = grid.constraint == Constraint.FixedRows || grid.constraint == Constraint.FixedColumns;
-
-            Property(matchWidthProp, showMatchWidthHeight);
-            Property(cellWidthProp, !grid.matchWidth);
-            Property(matchHeightProp, showMatchWidthHeight);
-            Property(cellHeightProp, !grid.matchHeight);
 
             Property(rowsProp, grid.constraint == Constraint.FixedRows);
             Property(columnsProp, grid.constraint == Constraint.FixedColumns);
+
+            Property(matchWidthProp);
+            Property(cellWidthProp, !grid.matchWidth);
+            Property(matchHeightProp);
+            Property(cellHeightProp, !grid.matchHeight);
 
             serializedObject.ApplyModifiedProperties();
         }
