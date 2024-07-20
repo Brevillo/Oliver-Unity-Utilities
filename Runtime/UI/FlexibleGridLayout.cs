@@ -29,10 +29,10 @@ public class FlexibleGridLayout : LayoutGroup
 
     public enum Constraint
     {
-        [Tooltip("Same number of rows and columns")]
-        Uniform = 0,
         [Tooltip("Calculates rows and columns to make smallest grid size.")]
-        Tight = 1,
+        Tight = 0,
+        [Tooltip("Same number of rows and columns")]
+        Uniform = 1,
         [Tooltip("Choose a fixed number of rows")]
         FixedRows = 2,
         [Tooltip("Choose a fixed number of columns")]
@@ -49,11 +49,11 @@ public class FlexibleGridLayout : LayoutGroup
     public Constraint constraint = Constraint.Uniform;
 
     [Tooltip("Should the cells be stretched to match the width?")]
-    public bool matchWidth;
+    public bool matchWidth = true;
     [Tooltip("Width of each grid cell")]
     public float cellWidth;
     [Tooltip("Should the cells be stretched to match the height?")]
-    public bool matchHeight;
+    public bool matchHeight = true;
     [Tooltip("Height of each grid cell")]
     public float cellHeight;
 
