@@ -11,6 +11,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.Settings
 
         public event Action<TValue> ValueChanged;
 
+        public TValue DefaultValue => defaultValue;
+
         public TValue Value
         {
             get => ToValue(PlayerPrefs.GetFloat(name, ToFloat(defaultValue)));
