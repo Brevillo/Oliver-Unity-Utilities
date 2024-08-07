@@ -19,9 +19,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.Settings
 
             set
             {
-                PlayerPrefs.SetFloat(name, ToFloat(value));
+                SetValueWithoutNotify(value);
                 InvokeValueChanged();
             }
+        }
+
+        public void SetValueWithoutNotify(TValue value)
+        {
+            PlayerPrefs.SetFloat(name, ToFloat(value));
         }
 
         public void InvokeValueChanged()
