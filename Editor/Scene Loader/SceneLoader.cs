@@ -4,59 +4,21 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEditor.SceneManagement;
-using System.IO;
+using System.Linq;
+using UnityEngine.SceneManagement;
 
 namespace OliverBeebe.UnityUtilities.Editor
 {
     public class SceneLoader : EditorWindow
     {
-        private const string sceneLoaderCachePath = "Editor/Scene Loader/Scene Loader Cache.asset";
-
         [MenuItem("Window/Oliver Utilities/Scene Loader")]
         private static void OpenSceneLoader()
         {
             CreateWindow<SceneLoader>(Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
         }
 
-        private void GenerateCache()
-        {
-            cache = CreateInstance<SceneLoaderCache>();
-
-            string directory = $"{Application.dataPath}/{Path.GetDirectoryName(sceneLoaderCachePath)}";
-            Directory.CreateDirectory(directory);
-
-            AssetDatabase.CreateAsset(cache, $"Assets/{sceneLoaderCachePath}");
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-        }
-
         private SceneLoaderCache cache;
-        private SceneLoaderCache Cache
-        {
-            get
-            {
-                if (cache == null)
-                {
-                    GenerateCache();
-                }
-
-                return cache;
-            }
-        }
-
-        private static void LoadScene(string name)
-        {
-            if (EditorApplication.isPlaying)
-            {
-                Debug.LogError("Can't load scenes with editor while in play mode!");
-                return;
-            }
-
-            if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            {
-                EditorSceneManager.OpenScene(name);
-            }
-        }
+        private SceneLoaderCache Cache => cache != null ? cache : cache = CreateInstance<SceneLoaderCache>().Initialize();
 
         private void OnGUI()
         {
@@ -66,9 +28,9 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.Space();
 
-            foreach (var folder in Cache.Folders)
+            foreach (var folder in Cache.folders)
             {
-                bool foldout = EditorGUILayout.Foldout(folder.editorFoldoutExpanded, folder.FolderName, true, EditorStyles.foldoutHeader);
+                bool foldout = EditorGUILayout.Foldout(folder.editorFoldoutExpanded, folder.folderName, true, EditorStyles.foldoutHeader);
 
                 folder.editorFoldoutExpanded = foldout;
 
@@ -78,7 +40,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                     EditorGUILayout.Space();
 
-                    for (int i = folder.scenes.Count - 1; i >= 0; i--)
+                    for (int i = 0; i < folder.scenes.Count; i++)
                     {
                         var scene = folder.scenes[i];
 
@@ -87,17 +49,35 @@ namespace OliverBeebe.UnityUtilities.Editor
                             normal = i % 2 == 1
                             ? new GUIStyleState()
                                 {
-                                    background = Cache.LightGrayTexture,
+                                    background = Cache.lightGrayTexture,
                                 }
                             : new GUIStyleState()
                         });
 
+                        int buildSettingsSceneIndex = EditorBuildSettings.scenes.ToList().FindIndex(existing => existing.path == scene.path);
+                        bool inBuildSettings = buildSettingsSceneIndex != -1;
+
                         EditorGUILayout.LabelField(scene.name);
 
-                        if (GUILayout.Button("Open"))
+                        GUIContent openButtonContent = EditorApplication.isPlaying
+                            ? new("Load", inBuildSettings ? "Load scene file." : "Can't load scene because it isn't in the build settings.")
+                            : new("Open", "Open scene file.");
+
+                        GUI.enabled = !EditorApplication.isPlaying || inBuildSettings;
+
+                        if (GUILayout.Button(openButtonContent))
                         {
-                            LoadScene(scene.path);
+                            if (Application.isPlaying)
+                            {
+                                SceneManager.LoadScene(buildSettingsSceneIndex);
+                            }
+                            else
+                            {
+                                EditorSceneManager.OpenScene(scene.path);
+                            }
                         }
+
+                        GUI.enabled = true;
 
                         if (GUILayout.Button("Select"))
                         {
@@ -105,12 +85,27 @@ namespace OliverBeebe.UnityUtilities.Editor
                             Selection.activeObject = scene.asset;
                         }
 
-                        GUILayout.EndHorizontal();
+                        GUI.enabled = !Application.isPlaying;
 
-                        //if (i != folder.scenes.Count - 1)
-                        //{
-                        //    EditorGUILayout.Space();
-                        //}
+                        var buildScenes = EditorBuildSettings.scenes.ToList();
+
+                        if (!inBuildSettings
+                            && GUILayout.Button("Add to Build"))
+                        {
+                            buildScenes.Add(new(scene.path, true));
+                        }
+
+                        if (inBuildSettings
+                            && GUILayout.Button("Remove from Build"))
+                        {
+                            buildScenes.RemoveAt(buildSettingsSceneIndex);
+                        }
+
+                        EditorBuildSettings.scenes = buildScenes.ToArray();
+
+                        GUI.enabled = true;
+
+                        GUILayout.EndHorizontal();
                     }
 
                     EditorGUI.indentLevel--;
@@ -118,8 +113,6 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                 EditorGUILayout.Space();
             }
-
-            AssetDatabase.SaveAssetIfDirty(Cache);
         }
     }
 }

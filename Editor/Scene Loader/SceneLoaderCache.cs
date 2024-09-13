@@ -11,43 +11,48 @@ namespace OliverBeebe.UnityUtilities.Editor
 {
     public class SceneLoaderCache : ScriptableObject
     {
+        public SceneLoaderCache Initialize()
+        {
+            folders = new();
+
+            float brigtness = 0.19f;
+            lightGrayTexture = new(1, 1);
+            lightGrayTexture.SetPixel(0, 0, new(brigtness, brigtness, brigtness, 1));
+            lightGrayTexture.Apply();
+
+            return this;
+        }
+
+        public List<Folder> folders = new();
+        public Texture2D lightGrayTexture;
+
         [Serializable]
         public class Folder
         {
             public Folder(string folderPath)
             {
-                FolderPath = folderPath;
+                this.folderPath = folderPath;
+                folderName
+                    = folderPath == "Assets" ? "Assets"
+                    : folderPath == "Assets/Scenes" ? "Scenes"
+                    : folderPath
+                    .Split('/')
+                    .SelectMany(name => name.Split(' '))
+                    .Where(name => name != "Scenes")                        // remove "scenes"
+                    .Where(name => name != "Assets")                        // remove "assets"
+                    .Where(name => !Regex.Match(name, @"\d").Success)       // remove numbers
+                    .Select(name => ObjectNames.NicifyVariableName(name))   // put spaces between words
+                    .Aggregate((total, name) => $"{total} {name}");
+
                 scenes = new();
             }
 
             public bool editorFoldoutExpanded = true;
 
-            private string folderPath;
-            private string folderName;
+            public string folderPath;
+            public string folderName;
 
             public List<Scene> scenes;
-
-            public string FolderPath
-            {
-                get => folderPath;
-                set
-                {
-                    folderPath = value;
-                    folderName
-                        = value == "Assets" ? "Assets"
-                        : value == "Assets/Scenes" ? "Scenes"
-                        : value
-                        .Split('/')
-                        .SelectMany(name => name.Split(' '))
-                        .Where(name => name != "Scenes")                        // remove "scenes"
-                        .Where(name => name != "Assets")                        // remove "assets"
-                        .Where(name => !Regex.Match(name, @"\d").Success)       // remove numbers
-                        .Select(name => ObjectNames.NicifyVariableName(name))   // put spaces between words
-                        .Aggregate((total, name) => $"{total} {name}");
-                }
-            }
-
-            public string FolderName => folderName;
         }
 
         [Serializable]
@@ -67,20 +72,18 @@ namespace OliverBeebe.UnityUtilities.Editor
 
         public void UpdateScenes()
         {
-            folders ??= new();
-
             var scenes = AssetDatabase.FindAssets("t:scene", new[] { "Assets" })
                 .Select(AssetDatabase.GUIDToAssetPath)
+                .OrderBy(path => path)
                 .Select(path => (
                     folderPath: Path.GetDirectoryName(path),
-                    assetPath: path,
-                    asset: AssetDatabase.LoadAssetAtPath<SceneAsset>(path)))
+                    scene: new Scene(path, AssetDatabase.LoadAssetAtPath<SceneAsset>(path))))
                 .ToList();
 
             // add new scenes
-            foreach (var (folderPath, assetPath, sceneAsset) in scenes)
+            foreach (var (folderPath, scene) in scenes)
             {
-                var existingFolder = folders.Find(folder => folder.FolderPath == folderPath);
+                var existingFolder = folders.Find(folder => folder.folderPath == folderPath);
 
                 if (existingFolder == null)
                 {
@@ -88,9 +91,9 @@ namespace OliverBeebe.UnityUtilities.Editor
                     folders.Add(existingFolder);
                 }
 
-                if (!existingFolder.scenes.Exists(scene => scene.asset == sceneAsset))
+                if (!existingFolder.scenes.Exists(existingScene => existingScene.asset == scene.asset))
                 {
-                    existingFolder.scenes.Add(new(assetPath, sceneAsset));
+                    existingFolder.scenes.Add(scene);
                 }
             }
 
@@ -99,48 +102,12 @@ namespace OliverBeebe.UnityUtilities.Editor
             {
                 var folder = folders[folderIndex];
 
-                folder.scenes.RemoveAll(scene => scene.asset == null);
+                folder.scenes.RemoveAll(scene => !scenes.Exists(existing => existing.scene.path == scene.path));
 
                 if (folder.scenes.Count == 0)
                 {
                     folders.RemoveAt(folderIndex);
                 }
-            }
-        }
-
-        [SerializeField]
-        private List<Folder> folders;
-
-        [SerializeField]
-        private Texture2D lightGrayTexture;
-
-        private const float brigtness = 0.19f;
-
-        public Texture2D LightGrayTexture
-        {
-            get
-            {
-                if (lightGrayTexture == null)
-                {
-                    lightGrayTexture = new(1, 1);
-                    lightGrayTexture.SetPixel(0, 0, new(brigtness, brigtness, brigtness, 1));
-                    lightGrayTexture.Apply();
-                }
-
-                return lightGrayTexture;
-            }
-        }
-
-        public List<Folder> Folders
-        {
-            get
-            {
-                if (folders == null)
-                {
-                    UpdateScenes();
-                }
-
-                return folders;
             }
         }
     }
