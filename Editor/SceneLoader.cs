@@ -62,10 +62,7 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             Cache.UpdateScenes();
 
-            if (GUILayout.Button("Regenerate Cache"))
-            {
-                GenerateCache();
-            }
+            titleContent = new("Scene Loader");
 
             EditorGUILayout.Space();
 
