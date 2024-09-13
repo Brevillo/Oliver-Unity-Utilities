@@ -1,0 +1,29 @@
+Work Timer Documentation
+
+Description:
+A simple tool for keeping track of time spent on tasks within Unity.
+
+Features:
+- Scriptable Object
+    Easy to access and reusables scriptable object interface.
+- Creating Segments
+    Create new "segments" which have a name and description field for
+    keeping track of what you did within a segment.
+- Recording Segments
+    Start recording with a new segment to track when you started working
+    on a task, and stop recording once you finish. The exact start and
+    end times are recorded, and total duration is calculated from those.
+- Copying Individual Segments
+    Copy data from individual segments into the clipboard for easy
+    movement to other formats like google sheets or excel.
+- Copying All Segments
+    Copy all segments simultaneously into the clipboard, or
+    print all the data to the debug console.
+- Output Preview
+    Output preview for seeing what the generated data from
+    the segments will look like.
+- Output Formatting
+    Output format field which lets you specify exactly how the segment
+    data gets formatted for outputting. For example, have the format
+    be [Name, Description, Start, End, Duration] so that the items
+    will be in that order when copy pasting them elsewhere.
