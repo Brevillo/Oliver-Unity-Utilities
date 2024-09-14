@@ -11,20 +11,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 {
     public class SceneLoaderCache : ScriptableObject
     {
-        public SceneLoaderCache Initialize()
-        {
-            folders = new();
-
-            float brigtness = 0.19f;
-            lightGrayTexture = new(1, 1);
-            lightGrayTexture.SetPixel(0, 0, new(brigtness, brigtness, brigtness, 1));
-            lightGrayTexture.Apply();
-
-            return this;
-        }
-
         public List<Folder> folders = new();
-        public Texture2D lightGrayTexture;
 
         [Serializable]
         public class Folder
@@ -63,11 +50,13 @@ namespace OliverBeebe.UnityUtilities.Editor
                 this.path = path;
                 this.asset = asset;
                 name = ObjectNames.NicifyVariableName(asset.name);
+                guid = AssetDatabase.GUIDFromAssetPath(path);
             }
 
             public string path;
             public SceneAsset asset;
             public string name;
+            public GUID guid;
         }
 
         public void UpdateScenes()
