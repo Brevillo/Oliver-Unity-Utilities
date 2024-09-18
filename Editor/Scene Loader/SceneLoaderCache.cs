@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.AnimatedValues;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -19,7 +20,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             public Folder(string folderPath)
             {
                 this.folderPath = folderPath;
-                folderName
+                displayName = name
                     = folderPath == "Assets" ? "Assets"
                     : folderPath == "Assets/Scenes" ? "Scenes"
                     : folderPath
@@ -32,31 +33,78 @@ namespace OliverBeebe.UnityUtilities.Editor
                     .Aggregate((total, name) => $"{total} {name}");
 
                 scenes = new();
+
+                folderAsset = AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderPath);
+                note = "";
+                color = Color.white;
+
+                editorFoldoutExpanded = new(false)
+                {
+                    speed = 6f,
+                };
             }
 
-            public bool editorFoldoutExpanded = true;
+            public AnimBool editorFoldoutExpanded;
 
             public string folderPath;
-            public string folderName;
+            public DefaultAsset folderAsset;
+            public string name;
+
+            public string displayName;
+            public string note;
+            public Color color;
+
+            public Texture2D texture;
+            public Texture2D GetTexture(Color color)
+            {
+                if (texture == null)
+                {
+                    texture = new(1, 1);
+                }
+
+                texture.SetPixel(0, 0, color);
+                texture.Apply();
+
+                return texture;
+            }
 
             public List<Scene> scenes;
         }
 
         [Serializable]
-        public struct Scene
+        public class Scene
         {
-            public Scene(string path, SceneAsset asset)
+            public Scene(SceneAsset asset)
             {
-                this.path = path;
                 this.asset = asset;
-                name = ObjectNames.NicifyVariableName(asset.name);
-                guid = AssetDatabase.GUIDFromAssetPath(path);
+                displayName = name = ObjectNames.NicifyVariableName(asset.name);
+                note = "";
+                color = Color.white;
             }
 
-            public string path;
             public SceneAsset asset;
             public string name;
-            public GUID guid;
+
+            public string displayName;
+            public string note;
+            public Color color;
+
+            public Texture2D texture;
+            public Texture2D GetTexture(Color color)
+            {
+                if (texture == null)
+                {
+                    texture = new(1, 1);
+                }
+
+                texture.SetPixel(0, 0, color);
+                texture.Apply();
+
+                return texture;
+            }
+
+            public string Path => AssetDatabase.GetAssetPath(asset);
+            public GUID Guid => AssetDatabase.GUIDFromAssetPath(Path);
         }
 
         public void UpdateScenes()
@@ -66,7 +114,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                 .OrderBy(path => path)
                 .Select(path => (
                     folderPath: Path.GetDirectoryName(path),
-                    scene: new Scene(path, AssetDatabase.LoadAssetAtPath<SceneAsset>(path))))
+                    scene: new Scene(AssetDatabase.LoadAssetAtPath<SceneAsset>(path))))
                 .ToList();
 
             // add new scenes
@@ -91,13 +139,27 @@ namespace OliverBeebe.UnityUtilities.Editor
             {
                 var folder = folders[folderIndex];
 
-                folder.scenes.RemoveAll(scene => !scenes.Exists(existing => existing.scene.path == scene.path));
+                folder.scenes.RemoveAll(scene => !scenes.Exists(existing => existing.scene.Path == scene.Path));
 
                 if (folder.scenes.Count == 0)
                 {
                     folders.RemoveAt(folderIndex);
                 }
             }
+
+            foreach (var folder in folders)
+            {
+                NaturalSort(ref folder.scenes);
+            }
+        }
+
+        public static void NaturalSort(ref List<Scene> list)
+        {
+            int maxLen = list.Max(scene => scene.name.Length);
+            list = list
+                .OrderBy(scene => Regex.Replace(scene.name, @"(\d+)|(\D+)",
+                    match => match.Value.PadLeft(maxLen, char.IsDigit(match.Value[0]) ? ' ' : char.MaxValue)))
+                .ToList();
         }
     }
 }
