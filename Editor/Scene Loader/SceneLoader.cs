@@ -11,6 +11,25 @@ using UnityEditor.AnimatedValues;
 
 /* todo
  * button for putting gitignore into clipboard
+ * 
+ * 
+ * 
+ * OnGUI : all open scenes from scene manager
+ * SceneHelper
+ *      all folder scenes,
+ *      checking if every folder scene is in the build settings
+ *      converting all folder scenes to editor build setting scenes
+ *      converting all folder scenes to scene assets
+ *      getting all the indeces of build setting scenes that aren't the active scene
+ * FolderHelper
+ *      checking if any folders aren't expanded
+ *      checking if any folders are expanded
+ * FolderAndScene
+ *      getting all build setting scenes that are enabled and contained in the cached guids list
+ * Folder
+ *      getting all the folder scenes that are not in the build settings, and converting to editor build settings
+ *      getting all the build scenes that are in the folder scenes
+ *      converting all folder scenes into scene assets
  */
 
 namespace OliverBeebe.UnityUtilities.Editor
@@ -27,12 +46,39 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             titleContent = new("Scene Loader");
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            AssetDatabaseUpdated += OnAssetDatabaseUpdated;
+
+            foreach (var animBool in AnimBools)
+            {
+                animBool.valueChanged.AddListener(Repaint);
+            }
         }
 
         private void OnDisable()
         {
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            AssetDatabaseUpdated -= OnAssetDatabaseUpdated;
+
+            foreach (var animBool in AnimBools)
+            {
+                animBool.valueChanged.RemoveListener(Repaint);
+            }
         }
+
+        private class SceneLoaderPostprocessor : AssetPostprocessor
+        {
+            private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+            {
+                AssetDatabaseUpdated?.Invoke();
+            }
+        }
+
+        private void OnAssetDatabaseUpdated()
+        {
+            Cache.UpdateScenes();
+        }
+
+        private static event Action AssetDatabaseUpdated;
 
         private SceneLoaderCache cache;
         private SceneLoaderCache Cache => cache != null ? cache : GetCache();
@@ -49,6 +95,9 @@ namespace OliverBeebe.UnityUtilities.Editor
             {
                 GenerateCache();
             }
+
+            cache.UpdateScenes();
+            cache.UpdateAnimBools(this);
 
             return cache;
         }
@@ -145,6 +194,19 @@ namespace OliverBeebe.UnityUtilities.Editor
         private bool styleAndContentCached;
 
         private bool animated = true;
+
+        private AnimBool[] animBools;
+        private AnimBool[] AnimBools => animBools ??= new[]
+        {
+            showSceneLoaderSettings,
+            selectScenes,
+            editBuildSettings,
+            editNotes,
+            editColors,
+            editNames,
+            additiveLoading,
+            closeAllScenes,
+        };
 
         private readonly AnimBool showSceneLoaderSettings = new(false)
         {
@@ -277,8 +339,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                 CacheStyleAndContent();
             }
 
-            Cache.UpdateScenes();
-            Repaint();
+            Cache.UpdateAnimBools(this);
 
             Undo.RecordObject(cache, "Scene Loader Cache Changed");
 
@@ -357,6 +418,8 @@ namespace OliverBeebe.UnityUtilities.Editor
                     if (EditorUtility.DisplayDialog(regenerateConfirmation.title, regenerateConfirmation.message, regenerateConfirmation.confirm, regenerateConfirmation.cancel))
                     {
                         GenerateCache();
+                        Cache.UpdateScenes();
+                        Cache.UpdateAnimBools(this);
                     }
                 }
 

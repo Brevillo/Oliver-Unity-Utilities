@@ -44,6 +44,22 @@ namespace OliverBeebe.UnityUtilities.Editor
                 };
             }
 
+            public void UpdateAnimBools(SceneLoader sceneLoader)
+            {
+                if (this.sceneLoader == sceneLoader) return;
+
+                if (this.sceneLoader != null)
+                {
+                    editorFoldoutExpanded.valueChanged.RemoveListener(this.sceneLoader.Repaint);
+                }
+
+                this.sceneLoader = sceneLoader;
+
+                editorFoldoutExpanded.valueChanged.AddListener(sceneLoader.Repaint);
+            }
+
+            private SceneLoader sceneLoader;
+
             public AnimBool editorFoldoutExpanded;
 
             public string folderPath;
@@ -150,6 +166,14 @@ namespace OliverBeebe.UnityUtilities.Editor
             foreach (var folder in folders)
             {
                 NaturalSort(ref folder.scenes);
+            }
+        }
+
+        public void UpdateAnimBools(SceneLoader sceneLoader)
+        {
+            foreach (var folder in folders)
+            {
+                folder.UpdateAnimBools(sceneLoader);
             }
         }
 
