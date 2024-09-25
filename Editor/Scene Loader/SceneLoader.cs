@@ -41,7 +41,9 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             var window = CreateWindow<SceneLoader>(Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
 
-            var icon = EditorGUIUtility.Load(windowIconPath) as Texture2D;
+            var icon =
+                Resources.Load<Texture2D>("Scene Loader Icon");
+                //EditorGUIUtility.Load(windowIconPath) as Texture2D;
             window.titleContent = new("Scene Loader", icon, "Utility window for loading and managing scenes.");
             window.cachedStyleAndContent = false;
             window.GetWindowStateCache();
@@ -146,7 +148,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             sceneCachePath = sceneLoaderCachesDirectory + "/Scene Caches/Scene Cache.asset",
             stateCachePath = sceneLoaderCachesDirectory + "/Window State Cache.asset",
 
-            windowIconPath = "Assets/Oliver-Unity-Utilities/Editor/Scene Loader/Scene Loader Icon.png",
+            windowIconPath = "Assets/Oliver-Unity-Utilities/Editor/Scene Loader/Resources/Scene Loader Icon.png",
 
             gitIgnore = "# Ignore Scene Loader caches\n/" + sceneLoaderCachesDirectory;
 
@@ -157,6 +159,8 @@ namespace OliverBeebe.UnityUtilities.Editor
             notesLabelWidth = 60,
             maxSaturation = 0.75f,
 
+            allFoldersVisibilityLabelWidth = 85,
+
             openSceneValue = 0.16f,
             unopenedSceneValue = 0.27f,
             folderBaseValue = 0.22f,
@@ -165,10 +169,15 @@ namespace OliverBeebe.UnityUtilities.Editor
 
         private static readonly (string title, string message, string confirm, string cancel)
             regenerateConfirmation = (
-                title:   "Generate Scene Loader Cache",
-                message: "This will reset all name, note, and color changes for the folders and scenes.",
-                confirm: "Generate",
-                cancel:  "Cancel");
+                title:      "Generate Scene Loader Cache",
+                message:    "This will reset all name, note, and color changes for the folders and scenes.",
+                confirm:    "Generate",
+                cancel:     "Cancel"),
+            openAllScenesConfirmation = (
+                title:      "Open All Scene Files",
+                message:    "Opening all scene files may take a while if you have many large scenes.",
+                confirm:    "Open All Scenes",
+                cancel:     "Cancel");
 
         private GUIStyle
             buttonStyle,
@@ -187,7 +196,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             editNamesToggle,
             editNotesToggle,
             editColorsToggle,
-            hideFoldersToggle,
+            editVisibilityToggle,
             doAnimationsToggle,
 
             sceneLoaderCacheLabel,
@@ -196,10 +205,13 @@ namespace OliverBeebe.UnityUtilities.Editor
             copyGitIgnoreCopied,
 
             reloadSceneButton,
+            reloadScenesButton,
+            allFolersVisibleToggle,
             expandFoldersButton,
             collapseFoldersButton,
 
-            folderVisibleToggle,
+            itemVisibleToggle,
+            allScenesVisibleToggle,
             openAllScenesButton,
             closeAllScenesButton,
             loadAllScenesButton,
@@ -265,7 +277,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             editNamesToggle         = new("Edit Names", "Edit the displayed scene and folder names. Doesn't change file names.");
             editNotesToggle         = new("Edit Notes", "Write notes for each scene and folder.");
             editColorsToggle        = new("Edit Colors", "Choose custom colors for each scene and folder.");
-            hideFoldersToggle       = new("Edit Folder Visibility", "Choose folders to hide");
+            editVisibilityToggle    = new("Edit Visibility", "Choose scenes and folders to hide");
             doAnimationsToggle      = new("Animate UI", "Animate various UI elements opening and closing.");
 
             sceneLoaderCacheLabel   = new("Scene Cache", "Cached information for the scenes and folders, and the name, notes, color, and visiblity changes.");
@@ -274,10 +286,13 @@ namespace OliverBeebe.UnityUtilities.Editor
             copyGitIgnoreCopied     = new("Git Ignore Copied!");
 
             reloadSceneButton       = new("Reload Scene", "Reload the active scene.");
+            reloadScenesButton      = new("Reload All Scenes", "Reloads all active scenes.");
+            allFolersVisibleToggle  = new("Folders Visible", "Toggle the visibility of all folders.");
             expandFoldersButton     = new("Expand All", "Expands all scene folders.");
             collapseFoldersButton   = new("Collapse All", "Collapses all scene folders");
 
-            folderVisibleToggle     = new("Visible", "Should folder be visible?");
+            itemVisibleToggle       = new("Visible");
+            allScenesVisibleToggle  = new("All Scenes", "Toggle the visibility of all scenes.");
             openAllScenesButton     = new("Open All", "Open all scene files.");
             closeAllScenesButton    = new("Close All", "Close all open scene files.");
             loadAllScenesButton     = new("Load All", "Load all build setting scenes");
@@ -461,7 +476,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                     EditorGUILayout.EndFadeGroup();
                 }
 
-                SetAnimBool(state.hideFolders, EditorGUILayout.Toggle(hideFoldersToggle, state.hideFolders.target));
+                SetAnimBool(state.editVisibility, EditorGUILayout.Toggle(editVisibilityToggle, state.editVisibility.target));
 
                 SetAnimBool(state.editNames, EditorGUILayout.Toggle(editNamesToggle, state.editNames.target));
 
@@ -521,19 +536,71 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             EditorGUILayout.BeginHorizontal();
 
-            if (GUILayout.Button(reloadSceneButton))
+            // reloading
+
+            if (openScenes.Count == 1)
             {
-                if (EditorApplication.isPlaying)
+                if (GUILayout.Button(reloadSceneButton))
                 {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                    if (EditorApplication.isPlaying)
+                    {
+                        SceneManager.LoadScene(openScenes[0].name);
+                    }
+                    else if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                    {
+                        EditorSceneManager.OpenScene(openScenes[0].path);
+                    }
                 }
-                else if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            }
+            else
+            {
+                if (GUILayout.Button(reloadScenesButton))
                 {
-                    EditorSceneManager.OpenScene(SceneManager.GetActiveScene().path);
+                    if (EditorApplication.isPlaying)
+                    {
+                        var sceneNames = openScenes.Select((scene, index) => (scene.name, index)).ToArray();
+
+                        foreach (var (sceneName, index) in sceneNames)
+                        {
+                            SceneManager.LoadScene(sceneName, index == 0 ? LoadSceneMode.Single : LoadSceneMode.Additive);
+                        }
+                    }
+                    else if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                    {
+                        var scenesPaths = openScenes.Select((scene, index) => (scene.path, index)).ToArray();
+
+                        foreach (var (scenePath, index) in scenesPaths)
+                        {
+                            EditorSceneManager.OpenScene(scenePath, index == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive);
+                        }
+                    }
                 }
             }
 
             GUILayout.FlexibleSpace();
+
+            // folder visibility
+
+            if (EditorGUILayout.BeginFadeGroup(state.editVisibility.faded))
+            {
+                float labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = allFoldersVisibilityLabelWidth;
+
+                bool allFoldersVisible = state.sceneCache.folders.All(folder => folder.visible.target);
+                bool newAllFoldersVisible = EditorGUILayout.Toggle(allFolersVisibleToggle, allFoldersVisible, GUILayout.MinWidth(allFoldersVisibilityLabelWidth + EditorGUIUtility.singleLineHeight));
+
+                if (allFoldersVisible != newAllFoldersVisible)
+                {
+                    foreach (var folder in state.sceneCache.folders)
+                    {
+                        SetAnimBool(folder.visible, newAllFoldersVisible);
+                    }
+                }
+
+                EditorGUIUtility.labelWidth = labelWidth;
+            }
+
+            EditorGUILayout.EndFadeGroup();
 
             // build scene editing
 
@@ -599,18 +666,21 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                 if (GUILayout.Button(openButton, buttonStyle))
                 {
-                    if (EditorApplication.isPlaying)
+                    if (EditorUtility.DisplayDialog(openAllScenesConfirmation.title, openAllScenesConfirmation.message, openAllScenesConfirmation.confirm, openAllScenesConfirmation.cancel))
                     {
-                        foreach (var sceneIndex in loadableScenesIndeces)
+                        if (EditorApplication.isPlaying)
                         {
-                            SceneManager.LoadScene(sceneIndex, LoadSceneMode.Additive);
+                            foreach (var sceneIndex in loadableScenesIndeces)
+                            {
+                                SceneManager.LoadScene(sceneIndex, LoadSceneMode.Additive);
+                            }
                         }
-                    }
-                    else
-                    {
-                        foreach (var scene in allScenes)
+                        else
                         {
-                            EditorSceneManager.OpenScene(scene.Path, OpenSceneMode.Additive);
+                            foreach (var scene in allScenes)
+                            {
+                                EditorSceneManager.OpenScene(scene.Path, OpenSceneMode.Additive);
+                            }
                         }
                     }
                 }
@@ -718,7 +788,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             // draw all folders
             foreach (var folder in state.sceneCache.folders)
             {
-                if (EditorGUILayout.BeginFadeGroup(Mathf.Max(state.hideFolders.faded, folder.visible.faded)))
+                if (EditorGUILayout.BeginFadeGroup(Mathf.Max(state.editVisibility.faded, folder.visible.faded)))
                 {
                     EditorGUILayout.BeginVertical(new GUIStyle()
                     {
@@ -740,9 +810,14 @@ namespace OliverBeebe.UnityUtilities.Editor
                         // draw all scenes
                         foreach (var scene in folder.scenes)
                         {
-                            EditorGUILayout.Space();
+                            if (EditorGUILayout.BeginFadeGroup(Mathf.Max(state.editVisibility.faded, scene.visible.faded)))
+                            {
+                                EditorGUILayout.Space();
 
-                            SceneGUI(scene, buildScenes, enabledBuildScenes, openScenes);
+                                SceneGUI(scene, buildScenes, enabledBuildScenes, openScenes);
+                            }
+
+                            EditorGUILayout.EndFadeGroup();
                         }
 
                         EditorGUI.indentLevel--;
@@ -799,19 +874,9 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.EndFadeGroup();
 
-            if (EditorGUILayout.BeginFadeGroup(state.hideFolders.faded))
-            {
-                float labelWidth = EditorGUIUtility.labelWidth;
-
-                EditorGUIUtility.labelWidth = buttonStyle.fixedWidth - EditorGUIUtility.singleLineHeight;
-                SetAnimBool(folder.visible, EditorGUILayout.Toggle(folderVisibleToggle, folder.visible.target, GUILayout.MinWidth(buttonStyle.fixedWidth)));
-
-                EditorGUIUtility.labelWidth = labelWidth;
-            }
-
-            EditorGUILayout.EndFadeGroup();
-
             EditorGUILayout.EndHorizontal();
+
+            // name
 
             if (EditorGUILayout.BeginFadeGroup(state.editNames.faded))
             {
@@ -822,6 +887,36 @@ namespace OliverBeebe.UnityUtilities.Editor
             EditorGUILayout.EndFadeGroup();
 
             EditorGUILayout.EndVertical();
+
+            // visibility
+
+            if (EditorGUILayout.BeginFadeGroup(state.editVisibility.faded))
+            {
+                EditorGUILayout.BeginVertical();
+
+                float labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = buttonStyle.fixedWidth - EditorGUIUtility.singleLineHeight;
+
+                SetAnimBool(folder.visible, EditorGUILayout.Toggle(itemVisibleToggle, folder.visible.target, GUILayout.MinWidth(buttonStyle.fixedWidth)));
+
+                bool allVisible = folder.scenes.All(scene => scene.visible.target);
+
+                bool newAllVisible = EditorGUILayout.Toggle(allScenesVisibleToggle, allVisible, GUILayout.MinWidth(buttonStyle.fixedWidth));
+
+                if (allVisible != newAllVisible)
+                {
+                    foreach (var scene in folder.scenes)
+                    {
+                        SetAnimBool(scene.visible, newAllVisible);
+                    }
+                }
+
+                EditorGUIUtility.labelWidth = labelWidth;
+
+                EditorGUILayout.EndVertical();
+            }
+
+            EditorGUILayout.EndFadeGroup();
 
             // add all scenes button
             if (EditorGUILayout.BeginFadeGroup(state.editBuildSettings.faded))
@@ -911,21 +1006,24 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                 if (GUILayout.Button(openButton, buttonStyle))
                 {
-                    // load all scenes
-                    if (EditorApplication.isPlaying)
+                    if (EditorUtility.DisplayDialog(openAllScenesConfirmation.title, openAllScenesConfirmation.message, openAllScenesConfirmation.confirm, openAllScenesConfirmation.cancel))
                     {
-                        foreach (var sceneIndex in unopenedSceneIndeces)
+                        // load all scenes
+                        if (EditorApplication.isPlaying)
                         {
-                            SceneManager.LoadScene(sceneIndex, LoadSceneMode.Additive);
+                            foreach (var sceneIndex in unopenedSceneIndeces)
+                            {
+                                SceneManager.LoadScene(sceneIndex, LoadSceneMode.Additive);
+                            }
                         }
-                    }
 
-                    // open all scenes
-                    else
-                    {
-                        foreach (var path in unopenedScenePaths)
+                        // open all scenes
+                        else
                         {
-                            EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                            foreach (var path in unopenedScenePaths)
+                            {
+                                EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+                            }
                         }
                     }
                 }
@@ -1019,8 +1117,12 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             if (EditorGUILayout.BeginFadeGroup(state.editNames.faded))
             {
-                EditorUtility.SetDirty(state.sceneCache);
+                EditorGUI.BeginChangeCheck();
                 scene.displayName = EditorGUILayout.TextField(scene.displayName, GUILayout.MaxWidth(float.MaxValue), GUILayout.MinWidth(buttonStyle.fixedWidth));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state.sceneCache);
+                }
             }
 
             EditorGUILayout.EndFadeGroup();
@@ -1040,8 +1142,37 @@ namespace OliverBeebe.UnityUtilities.Editor
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 0;
-                EditorUtility.SetDirty(state.sceneCache);
+
+                EditorGUI.BeginChangeCheck();
                 scene.color = EditorGUILayout.ColorField(GUIContent.none, scene.color, true, false, false, GUILayout.MaxWidth(buttonStyle.fixedWidth + EditorGUIUtility.singleLineHeight));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state.sceneCache);
+                }
+
+                EditorGUIUtility.labelWidth = labelWidth;
+            }
+
+            EditorGUILayout.EndFadeGroup();
+
+            // visibility
+
+            if (EditorGUILayout.BeginFadeGroup(state.editVisibility.faded))
+            {
+                float labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = buttonStyle.fixedWidth - EditorGUIUtility.singleLineHeight;
+
+                int indent = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
+
+                EditorGUI.BeginChangeCheck();
+                SetAnimBool(scene.visible, EditorGUILayout.Toggle(itemVisibleToggle, scene.visible.target, GUILayout.MinWidth(buttonStyle.fixedWidth)));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state.sceneCache);
+                }
+
+                EditorGUI.indentLevel = indent;
                 EditorGUIUtility.labelWidth = labelWidth;
             }
 

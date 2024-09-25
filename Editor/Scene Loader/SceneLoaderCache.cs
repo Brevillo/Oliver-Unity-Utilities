@@ -50,6 +50,11 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                 editorFoldoutExpanded.valueChanged.AddListener(sceneLoader.Repaint);
                 visible.valueChanged.AddListener(sceneLoader.Repaint);
+
+                foreach (var scene in scenes)
+                {
+                    scene.UpdateAnimBools(sceneLoader);
+                }
             }
 
             public AnimBool editorFoldoutExpanded;
@@ -86,6 +91,16 @@ namespace OliverBeebe.UnityUtilities.Editor
                 displayName = name = ObjectNames.NicifyVariableName(asset.name);
                 note = "";
                 color = Color.white;
+
+                visible = SceneLoader.DefaultAnimBool;
+                visible.value = true;
+            }
+
+            public void UpdateAnimBools(SceneLoader sceneLoader)
+            {
+                visible.valueChanged.RemoveAllListeners();
+
+                visible.valueChanged.AddListener(sceneLoader.Repaint);
             }
 
             public SceneAsset asset;
@@ -94,6 +109,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             public string note;
             public Color color;
             public Texture2D texture;
+            public AnimBool visible;
 
             public Texture2D GetTexture(Color color)
             {

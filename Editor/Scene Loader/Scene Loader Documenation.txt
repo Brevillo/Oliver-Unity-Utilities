@@ -2,38 +2,77 @@
 Scene Loader Documentation
 
 Description
-A editor window tool for loading scenes in the editor, both outside of and during runtime. It also has functionality for managing build setting scenes. Users can customize the displayed name of each scene and folder, as well as tint them with a color.
+A editor window tool for loading scenes in the editor, both outside of and
+during runtime. It also has functionality for managing build setting scenes.
+Users can customize the displayed name of each scene and folder, as well as
+tint them with a color. Users can also hide unwanted folders.
 
 Change Log
 
 Week 2 Changes
-- Generates a list of scenes sorted by folder, each with a button for loading them.
-- Added "Select" button for each scene for selecting the scene asest in the project window.
-- Made "Open" button switch to "Load" at runtime, and only be enabled for each scene if its listed in the build settings to avoid errors.
-- Added "Add" button to each scene, which adds the scene to the build settings. If added, the button changes to "Remove" which will remove the scene from the build settings. These buttons are only enabled when not running the game.
-- Added "Add All" / "Remove All" for adding/removing an entire folder's scenes to the build settings.
-- Added "Expand all"/"Collapse all" buttons for expanding or collapsing all the scene folders. Also added scroll bar for scene folder section of the window.
-- Added settings menu at the top of the window which allows toggling on/off additional features beyonding opening scenes.
-- Added "Reload Scene" button
-- Added support for additive scene loading, which lets you open multiple scenes at once. Also added "open all"/"close all" buttons for each folder.
-- Added the option to rename the displayed name for scenes and folders.
-- Added the option to add notes to each scene and folder.
-- Added the option to change the color of each scene and folder.
-- Added button to regenerate the scriptable object cache that stores the names, notes, colors, and cached scene asset references.
-- Added button for copying a gitignore string for ignoring the scene loader cache directory so that teammates can each customize the scene loader for thier own editor (untested).
-- Added option for disabling UI animations so I can ask if people prefer it with or without animations.
+-   Generates a list of scenes sorted by folder, each with a button for loading
+    them.
+
+-   Added "Select" button for each scene for selecting the scene asest in the
+    project window.
+
+-   Made "Open" button switch to "Load" at runtime, and only be enabled for
+    each scene if its listed in the build settings to avoid errors.
+
+-   Added "Add" button to each scene, which adds the scene to the build
+    settings. If added, the button changes to "Remove" which will remove the
+    scene from the build settings. These buttons are only enabled when not
+    running the game.
+
+-   Added "Add All" / "Remove All" for adding/removing an entire folder's
+    scenes to the build settings.
+
+-   Added "Expand all"/"Collapse all" buttons for expanding or collapsing all
+    the scene folders. Also added scroll bar for scene folder section of the
+    window.
+
+-   Added settings menu at the top of the window which allows toggling on/off
+    additional features beyonding opening scenes.
+
+-   Added "Reload Scene" button
+
+-   Added support for additive scene loading, which lets you open multiple
+    scenes at once. Also added "open all"/"close all" buttons for each folder.
+
+-   Added the option to rename the displayed name for scenes and folders.
+
+-   Added the option to add notes to each scene and folder.
+
+-   Added the option to change the color of each scene and folder.
+
+-   Added button to regenerate the scriptable object cache that stores the
+    names, notes, colors, and cached scene asset references.
+
+-   Added button for copying a gitignore string for ignoring the scene loader
+    cache directory so that teammates can each customize the scene loader for
+    thier own editor (untested).
+
+-   Added option for disabling UI animations so I can ask if people prefer it
+    with or without animations.
 
 Week 3 Changes
-- Added the option to hide folders
-- Cached window state in scriptable object so it will persist between script recompilations, reopening the window, and project reopening the project.
+-   Added the option to hide folders and scenes, as well mass hide all scenes
+    in a folder, or all folders.
 
-Future changes
-- Test gitignore feature
-- Create a scriptable object cache for the window's state (which options are selected, settings menu open, etc.).
-- Serialize the reference to the SceneLoaderCache so that users can change which one is being used and have a better understanding of how the window works if they want.
-- Allign UI elements better
-- Improve color tinting
-- Deal with edge case of user deleting the loaded scene at runtime
-- Button for "cleaning" the build setting scenes, removing disabled or deleted scenes from it.
-- Design more intended behavior for the "Reload scene" button when multiple scenes are loaded additively.
-- Add better commenting to the editor window script, since the file is very long
+-   Cached window state in scriptable object so it will persist between script
+    recompilations, reopening the window, and project reopening the project.
+
+-   Added icon to editor window.
+
+-   Made "reload scene" button change to "reload scenes" if multiple scenes are
+    loaded at once, and it will reload them in the same order they were loaded.
+
+Possible Future changes
+-   Test gitignore feature
+
+-   Improve color tinting
+
+-   Deal with edge case of user deleting the loaded scene at runtime
+
+-   Add better commenting to the editor window script, since the file is very
+    long
