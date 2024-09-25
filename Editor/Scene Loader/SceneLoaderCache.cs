@@ -26,10 +26,10 @@ namespace OliverBeebe.UnityUtilities.Editor
                     : folderPath
                     .Split('/')
                     .SelectMany(name => name.Split(' '))
-                    .Where(name => name != "Scenes")                        // remove "scenes"
-                    .Where(name => name != "Assets")                        // remove "assets"
-                    .Where(name => !Regex.Match(name, @"\d").Success)       // remove numbers
-                    .Select(name => ObjectNames.NicifyVariableName(name))   // put spaces between words
+                    .Where(name => name != "Scenes")                    // remove "scenes"
+                    .Where(name => name != "Assets")                    // remove "assets"
+                    .Where(name => !Regex.Match(name, @"\d").Success)   // remove numbers
+                    .Select(ObjectNames.NicifyVariableName)             // put spaces between words
                     .Aggregate((total, name) => $"{total} {name}");
 
                 scenes = new();
@@ -38,39 +38,31 @@ namespace OliverBeebe.UnityUtilities.Editor
                 note = "";
                 color = Color.white;
 
-                editorFoldoutExpanded = new(false)
-                {
-                    speed = 6f,
-                };
+                editorFoldoutExpanded = SceneLoader.DefaultAnimBool;
+                visible = SceneLoader.DefaultAnimBool;
+                visible.value = true;
             }
 
             public void UpdateAnimBools(SceneLoader sceneLoader)
             {
-                if (this.sceneLoader == sceneLoader) return;
-
-                if (this.sceneLoader != null)
-                {
-                    editorFoldoutExpanded.valueChanged.RemoveListener(this.sceneLoader.Repaint);
-                }
-
-                this.sceneLoader = sceneLoader;
+                editorFoldoutExpanded.valueChanged.RemoveAllListeners();
+                visible.valueChanged.RemoveAllListeners();
 
                 editorFoldoutExpanded.valueChanged.AddListener(sceneLoader.Repaint);
+                visible.valueChanged.AddListener(sceneLoader.Repaint);
             }
 
-            private SceneLoader sceneLoader;
-
             public AnimBool editorFoldoutExpanded;
-
+            public AnimBool visible;
             public string folderPath;
             public DefaultAsset folderAsset;
             public string name;
-
             public string displayName;
             public string note;
             public Color color;
-
+            public List<Scene> scenes;
             public Texture2D texture;
+
             public Texture2D GetTexture(Color color)
             {
                 if (texture == null)
@@ -83,8 +75,6 @@ namespace OliverBeebe.UnityUtilities.Editor
 
                 return texture;
             }
-
-            public List<Scene> scenes;
         }
 
         [Serializable]
@@ -100,12 +90,11 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             public SceneAsset asset;
             public string name;
-
             public string displayName;
             public string note;
             public Color color;
-
             public Texture2D texture;
+
             public Texture2D GetTexture(Color color)
             {
                 if (texture == null)

@@ -39,34 +39,44 @@ namespace OliverBeebe.UnityUtilities.Editor
         [MenuItem("Window/Oliver Utilities/Scene Loader")]
         private static void OpenSceneLoader()
         {
-            CreateWindow<SceneLoader>(Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
+            var window = CreateWindow<SceneLoader>(Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
+
+            var icon = EditorGUIUtility.Load(windowIconPath) as Texture2D;
+            window.titleContent = new("Scene Loader", icon, "Utility window for loading and managing scenes.");
+            window.cachedStyleAndContent = false;
+            window.GetWindowStateCache();
+            window.GetSceneCache();
+            window.SubscribeAnimBools(true);
         }
+
+        #region Callbacks
 
         private void OnEnable()
         {
-            titleContent = new("Scene Loader");
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            AssetDatabaseUpdated += OnAssetDatabaseUpdated;
-
-            foreach (var animBool in AnimBools)
-            {
-                animBool.valueChanged.AddListener(Repaint);
-            }
+            SceneLoaderPostprocessor.AssetDatabaseUpdated += OnAssetDatabaseUpdated;
         }
 
         private void OnDisable()
         {
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            AssetDatabaseUpdated -= OnAssetDatabaseUpdated;
+            SceneLoaderPostprocessor.AssetDatabaseUpdated -= OnAssetDatabaseUpdated;
+        }
 
-            foreach (var animBool in AnimBools)
-            {
-                animBool.valueChanged.RemoveListener(Repaint);
-            }
+        private void OnFocus()
+        {
+            SubscribeAnimBools(true);
+        }
+
+        private void OnLostFocus()
+        {
+            SubscribeAnimBools(false);
         }
 
         private class SceneLoaderPostprocessor : AssetPostprocessor
         {
+            public static event Action AssetDatabaseUpdated;
+
             private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
             {
                 AssetDatabaseUpdated?.Invoke();
@@ -75,233 +85,9 @@ namespace OliverBeebe.UnityUtilities.Editor
 
         private void OnAssetDatabaseUpdated()
         {
-            Cache.UpdateScenes();
-        }
+            if (state == null || state.sceneCache == null) return;
 
-        private static event Action AssetDatabaseUpdated;
-
-        private SceneLoaderCache cache;
-        private SceneLoaderCache Cache => cache != null ? cache : GetCache();
-
-        private SceneLoaderCache GetCache()
-        {
-            var loaded = AssetDatabase.LoadAssetAtPath<SceneLoaderCache>($"Assets/{sceneLoaderCachePath}");
-
-            if (loaded != null)
-            {
-                cache = loaded;
-            }
-            else
-            {
-                GenerateCache();
-            }
-
-            cache.UpdateScenes();
-            cache.UpdateAnimBools(this);
-
-            return cache;
-        }
-
-        private void GenerateCache()
-        {
-            cache = CreateInstance<SceneLoaderCache>();
-
-            string directory = $"{Application.dataPath}/{Path.GetDirectoryName(sceneLoaderCachePath)}";
-            Directory.CreateDirectory(directory);
-
-            AssetDatabase.CreateAsset(cache, $"Assets/{sceneLoaderCachePath}");
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-        }
-
-        #region Constants and Style/Content Caches
-
-        private const string
-
-            sceneLoaderCachesDirectory = "Editor/Scene Loader/Caches",
-            sceneLoaderCachePath = sceneLoaderCachesDirectory + "/Scene Loader Cache.asset",
-
-            gitIgnore = "# Ignore Scene Loader caches\n/" + sceneLoaderCachesDirectory;
-
-        private const float
-
-            settingsLabelWidth = 130,
-            sceneLabelWidth = 17,
-            notesLabelWidth = 60,
-            maxSaturation = 0.75f,
-
-            openSceneValue = 0.16f,
-            unopenedSceneValue = 0.27f,
-            folderBaseValue = 0.22f,
-
-            animationSpeed = 4f;
-
-        private static readonly (string title, string message, string confirm, string cancel)
-            regenerateConfirmation = (
-                title:   "Regenerate Scene Loader Cache",
-                message: "This will reset all name, note, and color changes for the folders and scenes.",
-                confirm: "Regenerate",
-                cancel:  "Cancel");
-
-        private GUIStyle
-            buttonStyle,
-            editableNoteStyle,
-            displayingNoteStyle;
-
-        private GUIContent
-
-            sceneLoadingAtRuntimeHelp,
-
-            settingsFoldout,
-            selectScenesToggle,
-            showBuildSettingsToggle,
-            buildSettingsWarning,
-            loadSceneModeLabel,
-            editNamesToggle,
-            editNotesToggle,
-            editColorsToggle,
-            doAnimationsToggle,
-
-            regenerateCache,
-            copyGitIgnore,
-            copyGitIgnoreCopied,
-
-            reloadSceneButton,
-            expandFoldersButton,
-            collapseFoldersButton,
-
-            openAllScenesButton,
-            closeAllScenesButton,
-            loadAllScenesButton,
-            unloadAllScenesButton,
-
-            selectAllScenesButton,
-            addAllScenesButton,
-            removeAllScenesButton,
-
-            openSceneButton,
-            closeSceneButton,
-            loadSceneButton,
-            unloadSceneButton,
-            selectSceneButton,
-            addSceneButton,
-            removeSceneButton;
-
-        #endregion
-
-        #region State
-
-        private bool styleAndContentCached;
-
-        private bool animated = true;
-
-        private AnimBool[] animBools;
-        private AnimBool[] AnimBools => animBools ??= new[]
-        {
-            showSceneLoaderSettings,
-            selectScenes,
-            editBuildSettings,
-            editNotes,
-            editColors,
-            editNames,
-            additiveLoading,
-            closeAllScenes,
-        };
-
-        private readonly AnimBool showSceneLoaderSettings = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool selectScenes = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool editBuildSettings = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool editNotes = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool editColors = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool editNames = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool additiveLoading = new(false)
-        {
-            speed = animationSpeed,
-        };
-        private readonly AnimBool closeAllScenes = new(false)
-        {
-            speed = animationSpeed,
-        };
-
-        private Vector2 scrollPosition = Vector2.zero;
-        private LoadSceneMode loadSceneMode = LoadSceneMode.Single;
-
-        #endregion
-
-        private void CacheStyleAndContent()
-        {
-            styleAndContentCached = true;
-
-            buttonStyle = new(GUI.skin.button)
-            {
-                fixedHeight = EditorGUIUtility.singleLineHeight,
-                fixedWidth = 80,
-                padding = new(0, 0, 0, 0),
-            };
-            editableNoteStyle = new GUIStyle(GUI.skin.textArea)
-            {
-                wordWrap = true,
-                padding = new(3, 3, 2, 2),
-            };
-            displayingNoteStyle = new(GUI.skin.label)
-            {
-                wordWrap = true,
-            };
-
-            sceneLoadingAtRuntimeHelp = new("Only enabled scenes in the build settings can be loaded at runtime.");
-
-            settingsFoldout         = new("Scene Loader Settings");
-            selectScenesToggle      = new("Select Scenes", "Show buttons for selecting scene assets in the project window.");
-            showBuildSettingsToggle = new("Edit Build Settings", "Shows buttons for editing build settings.");
-            buildSettingsWarning    = new("Build settings cannot be modified at runtime.");
-            loadSceneModeLabel      = new("Load Scene Mode", "The load scene mode used to open and load scenes files.");
-            editNamesToggle         = new("Edit Names", "Edit the displayed scene and folder names. Doesn't change file names.");
-            editNotesToggle         = new("Edit Notes", "Write notes for each scene and folder.");
-            editColorsToggle        = new("Edit Colors", "Choose custom colors for each scene and folder.");
-            doAnimationsToggle      = new("Animate UI", "Animate various UI elements opening and closing.");
-
-            regenerateCache         = new("Regenerate Cache", "Regenerates the cache used for the scene loader window. This will reset all names, notes, and color changes.");
-            copyGitIgnore           = new("Copy Git Ignore", "Copies a gitignore to ignore scene loader caches.");
-            copyGitIgnoreCopied     = new("Git Ignore Copied!");
-
-            reloadSceneButton       = new("Reload Scene", "Reload the active scene.");
-            expandFoldersButton     = new("Expand All", "Expands all scene folders.");
-            collapseFoldersButton   = new("Collapse All", "Collapses all scene folders");
-
-            openAllScenesButton     = new("Open All", "Open all scene files.");
-            closeAllScenesButton    = new("Close All", "Close all open scene files.");
-            loadAllScenesButton     = new("Load All", "Load all build setting scenes");
-            unloadAllScenesButton   = new("Unload All", "Unload all scenes.");
-
-            selectAllScenesButton   = new("Select All", "Select all scene assets in project window.");
-            addAllScenesButton      = new("Add All", "Add all scene assets to build settings.");
-            removeAllScenesButton   = new("Remove All", "Remove all scene assets from build settings.");
-
-            openSceneButton         = new("Open", "Open scene file.");
-            closeSceneButton        = new("Close", "Close scene file.");
-            loadSceneButton         = new("Load", "Load scene file.");
-            unloadSceneButton       = new("Unload", "Unload scene file.");
-            selectSceneButton       = new("Select", "Select scene asset in project window.");
-            addSceneButton          = new("Add", "Add scene asset to build settings.");
-            removeSceneButton       = new("Remove", "Remove scene asset from build settings.");
+            state.sceneCache.UpdateScenes();
         }
 
         /* Stupid that I have to do this, but apparently the scene manager
@@ -330,18 +116,268 @@ namespace OliverBeebe.UnityUtilities.Editor
             }
         }
 
+        private void SubscribeAnimBools(bool add)
+        {
+            if (state == null) return;
+
+            if (add)
+            {
+                foreach (var animBool in state.GetAnimBools())
+                {
+                    animBool.valueChanged.AddListener(Repaint);
+                }
+            }
+            else
+            {
+                foreach (var animBool in state.GetAnimBools())
+                {
+                    animBool.valueChanged.RemoveListener(Repaint);
+                }
+            }
+        }
+
+        #endregion
+
+        #region Constants and Style/Content Caches
+
+        private const string
+
+            sceneLoaderCachesDirectory = "Editor/Scene Loader/Caches",
+            sceneCachePath = sceneLoaderCachesDirectory + "/Scene Caches/Scene Cache.asset",
+            stateCachePath = sceneLoaderCachesDirectory + "/Window State Cache.asset",
+
+            windowIconPath = "Assets/Oliver-Unity-Utilities/Editor/Scene Loader/Scene Loader Icon.png",
+
+            gitIgnore = "# Ignore Scene Loader caches\n/" + sceneLoaderCachesDirectory;
+
+        private const float
+
+            settingsLabelWidth = 130,
+            sceneLabelWidth = 17,
+            notesLabelWidth = 60,
+            maxSaturation = 0.75f,
+
+            openSceneValue = 0.16f,
+            unopenedSceneValue = 0.27f,
+            folderBaseValue = 0.22f,
+
+            animationSpeed = 4f;
+
+        private static readonly (string title, string message, string confirm, string cancel)
+            regenerateConfirmation = (
+                title:   "Generate Scene Loader Cache",
+                message: "This will reset all name, note, and color changes for the folders and scenes.",
+                confirm: "Generate",
+                cancel:  "Cancel");
+
+        private GUIStyle
+            buttonStyle,
+            editableNoteStyle,
+            displayingNoteStyle;
+
+        private GUIContent
+
+            sceneLoadingAtRuntimeHelp,
+
+            settingsFoldout,
+            selectScenesToggle,
+            showBuildSettingsToggle,
+            buildSettingsWarning,
+            loadSceneModeLabel,
+            editNamesToggle,
+            editNotesToggle,
+            editColorsToggle,
+            hideFoldersToggle,
+            doAnimationsToggle,
+
+            sceneLoaderCacheLabel,
+            generateCache,
+            copyGitIgnore,
+            copyGitIgnoreCopied,
+
+            reloadSceneButton,
+            expandFoldersButton,
+            collapseFoldersButton,
+
+            folderVisibleToggle,
+            openAllScenesButton,
+            closeAllScenesButton,
+            loadAllScenesButton,
+            unloadAllScenesButton,
+
+            selectAllScenesButton,
+            addAllScenesButton,
+            removeAllScenesButton,
+
+            openSceneButton,
+            closeSceneButton,
+            loadSceneButton,
+            unloadSceneButton,
+            selectSceneButton,
+            addSceneButton,
+            removeSceneButton,
+
+            noCacheHelpBox;
+
+        #endregion
+
+        #region State
+
+        public static AnimBool DefaultAnimBool => new(false) { speed = animationSpeed };
+
+        private SceneLoaderWindowState state;
+
         private List<GUID> enabledBuildSceneGuids;
+
+        private bool cachedStyleAndContent;
+
+        #endregion
+
+        #region Scene/Window State Cache Loading/Generating
+
+        private void CacheStyleAndContent()
+        {
+            cachedStyleAndContent = true;
+
+            buttonStyle = new(GUI.skin.button)
+            {
+                fixedHeight = EditorGUIUtility.singleLineHeight,
+                fixedWidth = 80,
+                padding = new(0, 0, 0, 0),
+            };
+            editableNoteStyle = new GUIStyle(GUI.skin.textArea)
+            {
+                wordWrap = true,
+                padding = new(3, 3, 2, 2),
+            };
+            displayingNoteStyle = new(GUI.skin.label)
+            {
+                wordWrap = true,
+            };
+
+            sceneLoadingAtRuntimeHelp = new("Only enabled scenes in the build settings can be loaded at runtime.");
+
+            settingsFoldout         = new("Scene Loader Settings");
+            selectScenesToggle      = new("Select Scenes", "Show buttons for selecting scene assets in the project window.");
+            showBuildSettingsToggle = new("Edit Build Settings", "Shows buttons for editing build settings.");
+            buildSettingsWarning    = new("Build settings cannot be modified at runtime.");
+            loadSceneModeLabel      = new("Load Scene Mode", "The load scene mode used to open and load scenes files.");
+            editNamesToggle         = new("Edit Names", "Edit the displayed scene and folder names. Doesn't change file names.");
+            editNotesToggle         = new("Edit Notes", "Write notes for each scene and folder.");
+            editColorsToggle        = new("Edit Colors", "Choose custom colors for each scene and folder.");
+            hideFoldersToggle       = new("Edit Folder Visibility", "Choose folders to hide");
+            doAnimationsToggle      = new("Animate UI", "Animate various UI elements opening and closing.");
+
+            sceneLoaderCacheLabel   = new("Scene Cache", "Cached information for the scenes and folders, and the name, notes, color, and visiblity changes.");
+            generateCache           = new("Generate Cache", "Generates the cache used for the scene loader window. This will reset all names, notes, and color changes.");
+            copyGitIgnore           = new("Copy Git Ignore", "Copies a gitignore to ignore scene loader caches.");
+            copyGitIgnoreCopied     = new("Git Ignore Copied!");
+
+            reloadSceneButton       = new("Reload Scene", "Reload the active scene.");
+            expandFoldersButton     = new("Expand All", "Expands all scene folders.");
+            collapseFoldersButton   = new("Collapse All", "Collapses all scene folders");
+
+            folderVisibleToggle     = new("Visible", "Should folder be visible?");
+            openAllScenesButton     = new("Open All", "Open all scene files.");
+            closeAllScenesButton    = new("Close All", "Close all open scene files.");
+            loadAllScenesButton     = new("Load All", "Load all build setting scenes");
+            unloadAllScenesButton   = new("Unload All", "Unload all scenes.");
+
+            selectAllScenesButton   = new("Select All", "Select all scene assets in project window.");
+            addAllScenesButton      = new("Add All", "Add all scene assets to build settings.");
+            removeAllScenesButton   = new("Remove All", "Remove all scene assets from build settings.");
+
+            openSceneButton         = new("Open", "Open scene file.");
+            closeSceneButton        = new("Close", "Close scene file.");
+            loadSceneButton         = new("Load", "Load scene file.");
+            unloadSceneButton       = new("Unload", "Unload scene file.");
+            selectSceneButton       = new("Select", "Select scene asset in project window.");
+            addSceneButton          = new("Add", "Add scene asset to build settings.");
+            removeSceneButton       = new("Remove", "Remove scene asset from build settings.");
+
+            noCacheHelpBox          = new("Must generate a scene cache!");
+        }
+
+        private SceneLoaderCache GetSceneCache()
+        {
+            var loaded = AssetDatabase.LoadAssetAtPath<SceneLoaderCache>($"Assets/{sceneCachePath}");
+
+            if (loaded != null)
+            {
+                state.sceneCache = loaded;
+                EditorUtility.SetDirty(state);
+            }
+            else
+            {
+                GenerateSceneCache();
+            }
+
+            state.sceneCache.UpdateScenes();
+            state.sceneCache.UpdateAnimBools(this);
+
+            return state.sceneCache;
+        }
+
+        private void GenerateSceneCachePrompt()
+        {
+            if (EditorUtility.DisplayDialog(regenerateConfirmation.title, regenerateConfirmation.message, regenerateConfirmation.confirm, regenerateConfirmation.cancel))
+            {
+                GenerateSceneCache();
+                state.sceneCache.UpdateScenes();
+                state.sceneCache.UpdateAnimBools(this);
+            }
+        }
+
+        private void GenerateSceneCache()
+        {
+            state.sceneCache = CreateInstance<SceneLoaderCache>();
+            EditorUtility.SetDirty(state);
+
+            string directory = $"{Application.dataPath}/{Path.GetDirectoryName(sceneCachePath)}";
+            Directory.CreateDirectory(directory);
+
+            AssetDatabase.CreateAsset(state.sceneCache, $"Assets/{sceneCachePath}");
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private void GetWindowStateCache()
+        {
+            var loaded = AssetDatabase.LoadAssetAtPath<SceneLoaderWindowState>($"Assets/{stateCachePath}");
+
+            if (loaded != null)
+            {
+                state = loaded;
+                return;
+            }
+
+            state = CreateInstance<SceneLoaderWindowState>();
+
+            string directory = $"{Application.dataPath}/{Path.GetDirectoryName(stateCachePath)}";
+            Directory.CreateDirectory(directory);
+
+            AssetDatabase.CreateAsset(state, $"Assets/{stateCachePath}");
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        #endregion
+
+        #region GUI
 
         private void OnGUI()
         {
-            if (!styleAndContentCached)
+            if (state == null)
+            {
+                GetWindowStateCache();
+            }
+
+            if (!cachedStyleAndContent)
             {
                 CacheStyleAndContent();
             }
 
-            Cache.UpdateAnimBools(this);
-
-            Undo.RecordObject(cache, "Scene Loader Cache Changed");
+            Undo.RecordObject(state, "Scene Loader Window State Changed");
 
             if (EditorApplication.isPlaying)
             {
@@ -355,26 +391,46 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.Space();
 
-            var openScenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).ToList();
+            if (state.sceneCache != null)
+            {
+                state.sceneCache.UpdateAnimBools(this);
 
-            SceneHelperGUI(openScenes);
+                Undo.RecordObject(state.sceneCache, "Scene Loader Cache Changed");
 
-            EditorGUILayout.Space();
+                var openScenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).ToList();
 
-            FolderHelperGUI();
+                SceneHelperGUI(openScenes);
 
-            FolderAndScenesGUI(openScenes);
+                EditorGUILayout.Space();
 
-            AssetDatabase.SaveAssetIfDirty(cache);
+                FolderHelperGUI();
+
+                FolderAndScenesGUI(openScenes);
+
+                AssetDatabase.SaveAssetIfDirty(state.sceneCache);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(noCacheHelpBox.text, MessageType.Error);
+
+                EditorGUILayout.Space();
+
+                if (GUILayout.Button(generateCache))
+                {
+                    GenerateSceneCachePrompt();
+                }
+            }
+
+            AssetDatabase.SaveAssetIfDirty(state);
         }
 
         private void SettingsGUI()
         {
             EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
 
-            SetAnimBool(showSceneLoaderSettings, EditorGUILayout.Foldout(showSceneLoaderSettings.target, settingsFoldout, true, EditorStyles.foldout));
+            SetAnimBool(state.showSceneLoaderSettings, EditorGUILayout.Foldout(state.showSceneLoaderSettings.target, settingsFoldout, true, EditorStyles.foldout));
 
-            if (EditorGUILayout.BeginFadeGroup(showSceneLoaderSettings.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.showSceneLoaderSettings.faded))
             {
                 EditorGUI.indentLevel++;
 
@@ -383,44 +439,59 @@ namespace OliverBeebe.UnityUtilities.Editor
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = settingsLabelWidth;
 
-                loadSceneMode = (LoadSceneMode)EditorGUILayout.EnumPopup(loadSceneModeLabel, loadSceneMode);
-                SetAnimBool(additiveLoading, loadSceneMode == LoadSceneMode.Additive);
+                EditorGUI.BeginChangeCheck();
+                state.loadSceneMode = (LoadSceneMode)EditorGUILayout.EnumPopup(loadSceneModeLabel, state.loadSceneMode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state);
+                }
 
-                SetAnimBool(selectScenes, EditorGUILayout.Toggle(selectScenesToggle, selectScenes.target));
+                SetAnimBool(state.additiveLoading, state.loadSceneMode == LoadSceneMode.Additive);
 
-                SetAnimBool(editBuildSettings, EditorGUILayout.Toggle(showBuildSettingsToggle, editBuildSettings.target));
+                SetAnimBool(state.selectScenes, EditorGUILayout.Toggle(selectScenesToggle, state.selectScenes.target));
+
+                SetAnimBool(state.editBuildSettings, EditorGUILayout.Toggle(showBuildSettingsToggle, state.editBuildSettings.target));
 
                 if (EditorApplication.isPlaying)
                 {
-                    if (EditorGUILayout.BeginFadeGroup(editBuildSettings.faded))
+                    if (EditorGUILayout.BeginFadeGroup(state.editBuildSettings.faded))
                     {
                         EditorGUILayout.HelpBox(buildSettingsWarning.text, MessageType.Warning);
                     }
                     EditorGUILayout.EndFadeGroup();
                 }
 
-                SetAnimBool(editNames, EditorGUILayout.Toggle(editNamesToggle, editNames.target));
+                SetAnimBool(state.hideFolders, EditorGUILayout.Toggle(hideFoldersToggle, state.hideFolders.target));
 
-                SetAnimBool(editNotes, EditorGUILayout.Toggle(editNotesToggle, editNotes.target));
+                SetAnimBool(state.editNames, EditorGUILayout.Toggle(editNamesToggle, state.editNames.target));
 
-                SetAnimBool(editColors, EditorGUILayout.Toggle(editColorsToggle, editColors.target));
+                SetAnimBool(state.editNotes, EditorGUILayout.Toggle(editNotesToggle, state.editNotes.target));
+
+                SetAnimBool(state.editColors, EditorGUILayout.Toggle(editColorsToggle, state.editColors.target));
 
                 EditorGUILayout.Space();
 
-                animated = EditorGUILayout.Toggle(doAnimationsToggle, animated);
+                EditorGUI.BeginChangeCheck();
+                state.animated = EditorGUILayout.Toggle(doAnimationsToggle, state.animated);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state);
+                }
+
+                EditorGUILayout.Space();
+
+                EditorGUI.BeginChangeCheck();
+                state.sceneCache = (SceneLoaderCache)EditorGUILayout.ObjectField(sceneLoaderCacheLabel, state.sceneCache, typeof(SceneLoaderCache), false);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(state);
+                }
 
                 EditorGUIUtility.labelWidth = labelWidth;
 
-                EditorGUILayout.Space();
-
-                if (GUI.Button(EditorGUI.IndentedRect(EditorGUILayout.GetControlRect()), regenerateCache))
+                if (GUI.Button(EditorGUI.IndentedRect(EditorGUILayout.GetControlRect()), generateCache))
                 {
-                    if (EditorUtility.DisplayDialog(regenerateConfirmation.title, regenerateConfirmation.message, regenerateConfirmation.confirm, regenerateConfirmation.cancel))
-                    {
-                        GenerateCache();
-                        Cache.UpdateScenes();
-                        Cache.UpdateAnimBools(this);
-                    }
+                    GenerateSceneCachePrompt();
                 }
 
                 var gitIgnoreContent = EditorGUIUtility.systemCopyBuffer == gitIgnore
@@ -429,6 +500,11 @@ namespace OliverBeebe.UnityUtilities.Editor
                 if (GUI.Button(EditorGUI.IndentedRect(EditorGUILayout.GetControlRect()), gitIgnoreContent))
                 {
                     EditorGUIUtility.systemCopyBuffer = gitIgnore;
+                }
+
+                if (GUI.Button(EditorGUI.IndentedRect(EditorGUILayout.GetControlRect()), "Refresh Window"))
+                {
+                    CacheStyleAndContent();
                 }
 
                 EditorGUILayout.Space();
@@ -461,9 +537,9 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             // build scene editing
 
-            var allScenes = Cache.folders.SelectMany(folder => folder.scenes).ToArray();
+            var allScenes = state.sceneCache.folders.SelectMany(folder => folder.scenes).ToArray();
 
-            if (EditorGUILayout.BeginFadeGroup(editBuildSettings.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editBuildSettings.faded))
             {
                 EditorGUILayout.BeginVertical();
 
@@ -490,7 +566,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             // scene selecting
 
-            if (EditorGUILayout.BeginFadeGroup(selectScenes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.selectScenes.faded))
             {
                 if (GUILayout.Button(selectAllScenesButton, buttonStyle))
                 {
@@ -510,7 +586,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             bool multipleScenesOpen = openScenes.Count > 1;
 
-            if (additiveLoading.target)
+            if (state.additiveLoading.target)
             {
                 var activeScenePath = SceneManager.GetActiveScene().path;
                 var loadableScenesIndeces = EditorBuildSettings.scenes.Where(scene => scene.path != activeScenePath).Select((scene, i) => i).ToArray();
@@ -547,9 +623,9 @@ namespace OliverBeebe.UnityUtilities.Editor
                 }
             }
 
-            SetAnimBool(closeAllScenes, loadSceneMode == LoadSceneMode.Single && multipleScenesOpen);
+            SetAnimBool(state.closeAllScenes, state.loadSceneMode == LoadSceneMode.Single && multipleScenesOpen);
 
-            if (EditorGUILayout.BeginFadeGroup(closeAllScenes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.closeAllScenes.faded))
             {
                 if (GUILayout.Button(closeAllScenesButton, buttonStyle))
                 {
@@ -584,7 +660,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.EndVertical();
 
-            if (!(additiveLoading.value || closeAllScenes.value))
+            if (!(state.additiveLoading.value || state.closeAllScenes.value))
             {
                 GUILayout.Space(buttonStyle.fixedWidth);
             }
@@ -596,19 +672,19 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             EditorGUILayout.BeginHorizontal();
 
-            GUI.enabled = Cache.folders.Any(folder => !folder.editorFoldoutExpanded.target);
+            GUI.enabled = state.sceneCache.folders.Any(folder => !folder.editorFoldoutExpanded.target);
             if (GUILayout.Button(expandFoldersButton))
             {
-                foreach (var folder in Cache.folders)
+                foreach (var folder in state.sceneCache.folders)
                 {
                     SetAnimBool(folder.editorFoldoutExpanded, true);
                 }
             }
 
-            GUI.enabled = Cache.folders.Any(folder => folder.editorFoldoutExpanded.target);
+            GUI.enabled = state.sceneCache.folders.Any(folder => folder.editorFoldoutExpanded.target);
             if (GUILayout.Button(collapseFoldersButton))
             {
-                foreach (var folder in Cache.folders)
+                foreach (var folder in state.sceneCache.folders)
                 {
                     SetAnimBool(folder.editorFoldoutExpanded, false);
                 }
@@ -623,7 +699,12 @@ namespace OliverBeebe.UnityUtilities.Editor
 
         private void FolderAndScenesGUI(List<Scene> openScenes)
         {
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            EditorGUI.BeginChangeCheck();
+            state.scrollPosition = EditorGUILayout.BeginScrollView(state.scrollPosition);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorUtility.SetDirty(state);
+            }
 
             var buildScenes = EditorBuildSettings.scenes.ToList();
             var enabledBuildScenes = buildScenes
@@ -635,43 +716,48 @@ namespace OliverBeebe.UnityUtilities.Editor
             EditorGUIUtility.labelWidth = sceneLabelWidth;
 
             // draw all folders
-            foreach (var folder in Cache.folders)
+            foreach (var folder in state.sceneCache.folders)
             {
-                EditorGUILayout.BeginVertical(new GUIStyle()
+                if (EditorGUILayout.BeginFadeGroup(Mathf.Max(state.hideFolders.faded, folder.visible.faded)))
                 {
-                    normal = new()
+                    EditorGUILayout.BeginVertical(new GUIStyle()
                     {
-                        background = folder.GetTexture(CalculateColor(folder.color, folderBaseValue)),
-                    }
-                });
+                        normal = new()
+                        {
+                            background = folder.GetTexture(CalculateColor(folder.color, folderBaseValue)),
+                        }
+                    });
 
-                EditorGUILayout.Space();
+                    EditorGUILayout.Space();
 
-                FolderGUI(folder, buildScenes, enabledBuildScenes, openScenes);
+                    FolderGUI(folder, buildScenes, enabledBuildScenes, openScenes);
 
-                // foldout
-                if (EditorGUILayout.BeginFadeGroup(folder.editorFoldoutExpanded.faded))
-                {
-                    EditorGUI.indentLevel++;
-
-                    // draw all scenes
-                    foreach (var scene in folder.scenes)
+                    // foldout
+                    if (EditorGUILayout.BeginFadeGroup(folder.editorFoldoutExpanded.faded))
                     {
-                        EditorGUILayout.Space();
+                        EditorGUI.indentLevel++;
 
-                        SceneGUI(scene, buildScenes, enabledBuildScenes, openScenes);
+                        // draw all scenes
+                        foreach (var scene in folder.scenes)
+                        {
+                            EditorGUILayout.Space();
+
+                            SceneGUI(scene, buildScenes, enabledBuildScenes, openScenes);
+                        }
+
+                        EditorGUI.indentLevel--;
                     }
 
-                    EditorGUI.indentLevel--;
+                    EditorGUILayout.EndFoldoutHeaderGroup();
+
+                    EditorGUILayout.EndFadeGroup();
+
+                    EditorGUILayout.Space();
+
+                    EditorGUILayout.EndVertical();
                 }
 
-                EditorGUILayout.EndFoldoutHeaderGroup();
-
                 EditorGUILayout.EndFadeGroup();
-
-                EditorGUILayout.Space();
-
-                EditorGUILayout.EndVertical();
             }
 
             EditorGUIUtility.labelWidth = labelWidth;
@@ -702,11 +788,24 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             GUILayout.FlexibleSpace();
 
-            if (EditorGUILayout.BeginFadeGroup(editColors.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editColors.faded))
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 0;
+                EditorUtility.SetDirty(state.sceneCache);
                 folder.color = EditorGUILayout.ColorField(GUIContent.none, folder.color, true, false, false, GUILayout.MaxWidth(buttonStyle.fixedWidth));
+                EditorGUIUtility.labelWidth = labelWidth;
+            }
+
+            EditorGUILayout.EndFadeGroup();
+
+            if (EditorGUILayout.BeginFadeGroup(state.hideFolders.faded))
+            {
+                float labelWidth = EditorGUIUtility.labelWidth;
+
+                EditorGUIUtility.labelWidth = buttonStyle.fixedWidth - EditorGUIUtility.singleLineHeight;
+                SetAnimBool(folder.visible, EditorGUILayout.Toggle(folderVisibleToggle, folder.visible.target, GUILayout.MinWidth(buttonStyle.fixedWidth)));
+
                 EditorGUIUtility.labelWidth = labelWidth;
             }
 
@@ -714,8 +813,9 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            if (EditorGUILayout.BeginFadeGroup(editNames.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editNames.faded))
             {
+                EditorUtility.SetDirty(state.sceneCache);
                 folder.displayName = EditorGUILayout.TextField(folder.displayName, GUILayout.MaxWidth(float.MaxValue));
             }
 
@@ -724,7 +824,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             EditorGUILayout.EndVertical();
 
             // add all scenes button
-            if (EditorGUILayout.BeginFadeGroup(editBuildSettings.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editBuildSettings.faded))
             {
                 EditorGUILayout.BeginVertical();
 
@@ -760,7 +860,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             EditorGUILayout.EndFadeGroup();
 
             // select folder asset
-            if (EditorGUILayout.BeginFadeGroup(selectScenes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.selectScenes.faded))
             {
                 if (GUILayout.Button(selectAllScenesButton, buttonStyle))
                 {
@@ -773,7 +873,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             // scene opening/closing/loading/unloading
 
-            if (additiveLoading.target)
+            if (state.additiveLoading.target)
             {
                 var scenePaths = folder.scenes
                     .Select(scene => scene.Path)
@@ -864,11 +964,12 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            if (EditorGUILayout.BeginFadeGroup(editNotes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editNotes.faded))
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = notesLabelWidth;
 
+                EditorUtility.SetDirty(state.sceneCache);
                 folder.note = EditorGUILayout.TextArea(folder.note, editableNoteStyle);
 
                 EditorGUIUtility.labelWidth = labelWidth;
@@ -878,7 +979,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             if (folder.note != "")
             {
-                if (EditorGUILayout.BeginFadeGroup(1 - editNotes.faded))
+                if (EditorGUILayout.BeginFadeGroup(1 - state.editNotes.faded))
                 {
                     EditorGUILayout.LabelField(folder.note, displayingNoteStyle);
                 }
@@ -916,14 +1017,15 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.BeginVertical();
 
-            if (EditorGUILayout.BeginFadeGroup(editNames.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editNames.faded))
             {
+                EditorUtility.SetDirty(state.sceneCache);
                 scene.displayName = EditorGUILayout.TextField(scene.displayName, GUILayout.MaxWidth(float.MaxValue), GUILayout.MinWidth(buttonStyle.fixedWidth));
             }
 
             EditorGUILayout.EndFadeGroup();
 
-            if (EditorGUILayout.BeginFadeGroup(1 - editNames.faded))
+            if (EditorGUILayout.BeginFadeGroup(1 - state.editNames.faded))
             {
                 EditorGUILayout.LabelField(scene.displayName, EditorStyles.boldLabel, GUILayout.MaxWidth(float.MaxValue));
             }
@@ -934,10 +1036,11 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             // color
 
-            if (EditorGUILayout.BeginFadeGroup(editColors.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editColors.faded))
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 0;
+                EditorUtility.SetDirty(state.sceneCache);
                 scene.color = EditorGUILayout.ColorField(GUIContent.none, scene.color, true, false, false, GUILayout.MaxWidth(buttonStyle.fixedWidth + EditorGUIUtility.singleLineHeight));
                 EditorGUIUtility.labelWidth = labelWidth;
             }
@@ -949,7 +1052,7 @@ namespace OliverBeebe.UnityUtilities.Editor
             GUID sceneGuid = scene.Guid;
             bool inBuildSettings = buildScenes.Any(buildScene => buildScene.guid == sceneGuid);
 
-            if (EditorGUILayout.BeginFadeGroup(editBuildSettings.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editBuildSettings.faded))
             {
                 GUI.enabled = !EditorApplication.isPlaying;
 
@@ -970,7 +1073,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             GUI.enabled = true;
 
-            if (EditorGUILayout.BeginFadeGroup(selectScenes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.selectScenes.faded))
             {
                 if (GUILayout.Button(selectSceneButton, buttonStyle))
                 {
@@ -997,7 +1100,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                     // load scene
                     if (!open)
                     {
-                        SceneManager.LoadScene(scene.asset.name, loadSceneMode);
+                        SceneManager.LoadScene(scene.asset.name, state.loadSceneMode);
                     }
 
                     // unload scene
@@ -1011,7 +1114,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                     // close scene
                     if (!open)
                     {
-                        EditorSceneManager.OpenScene(scene.Path, (OpenSceneMode)loadSceneMode);
+                        EditorSceneManager.OpenScene(scene.Path, (OpenSceneMode)state.loadSceneMode);
                     }
 
                     // open scene
@@ -1030,11 +1133,12 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.BeginVertical();
 
-            if (EditorGUILayout.BeginFadeGroup(editNotes.faded))
+            if (EditorGUILayout.BeginFadeGroup(state.editNotes.faded))
             {
                 float labelWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = notesLabelWidth;
 
+                EditorUtility.SetDirty(state.sceneCache);
                 scene.note = EditorGUILayout.TextArea(scene.note, editableNoteStyle);
 
                 EditorGUIUtility.labelWidth = labelWidth;
@@ -1044,7 +1148,7 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             if (scene.note != "")
             {
-                if (EditorGUILayout.BeginFadeGroup(1 - editNotes.faded))
+                if (EditorGUILayout.BeginFadeGroup(1 - state.editNotes.faded))
                 {
                     EditorGUILayout.LabelField(scene.note, displayingNoteStyle);
                 }
@@ -1056,6 +1160,10 @@ namespace OliverBeebe.UnityUtilities.Editor
 
             EditorGUILayout.EndVertical();
         }
+
+        #endregion
+
+        #region Helper
 
         private Color CalculateColor(Color tint, float value)
         {
@@ -1078,14 +1186,28 @@ namespace OliverBeebe.UnityUtilities.Editor
 
         private void SetAnimBool(AnimBool animBool, bool value)
         {
-            if (animated)
+            if (state.animated)
             {
+                if (animBool.target != value)
+                {
+                    EditorUtility.SetDirty(state.sceneCache);
+                    EditorUtility.SetDirty(state);
+                }
+
                 animBool.target = value;
             }
             else
             {
+                if (animBool.value != value)
+                {
+                    EditorUtility.SetDirty(state.sceneCache);
+                    EditorUtility.SetDirty(state);
+                }
+
                 animBool.value = value;
             }
         }
+
+        #endregion
     }
 }

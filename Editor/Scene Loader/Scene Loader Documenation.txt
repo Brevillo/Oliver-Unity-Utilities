@@ -5,6 +5,8 @@ Description
 A editor window tool for loading scenes in the editor, both outside of and during runtime. It also has functionality for managing build setting scenes. Users can customize the displayed name of each scene and folder, as well as tint them with a color.
 
 Change Log
+
+Week 2 Changes
 - Generates a list of scenes sorted by folder, each with a button for loading them.
 - Added "Select" button for each scene for selecting the scene asest in the project window.
 - Made "Open" button switch to "Load" at runtime, and only be enabled for each scene if its listed in the build settings to avoid errors.
@@ -20,6 +22,10 @@ Change Log
 - Added button to regenerate the scriptable object cache that stores the names, notes, colors, and cached scene asset references.
 - Added button for copying a gitignore string for ignoring the scene loader cache directory so that teammates can each customize the scene loader for thier own editor (untested).
 - Added option for disabling UI animations so I can ask if people prefer it with or without animations.
+
+Week 3 Changes
+- Added the option to hide folders
+- Cached window state in scriptable object so it will persist between script recompilations, reopening the window, and project reopening the project.
 
 Future changes
 - Test gitignore feature
