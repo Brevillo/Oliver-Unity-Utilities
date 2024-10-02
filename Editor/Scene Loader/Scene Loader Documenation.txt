@@ -68,8 +68,6 @@ Week 3 Changes
     loaded at once, and it will reload them in the same order they were loaded.
 
 Possible Future changes
--   Test gitignore feature
-
 -   Improve color tinting
 
 -   Deal with edge case of user deleting the loaded scene at runtime

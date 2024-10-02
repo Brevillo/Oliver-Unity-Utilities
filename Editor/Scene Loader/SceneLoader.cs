@@ -12,8 +12,6 @@ using UnityEditor.AnimatedValues;
 /* todo
  * button for putting gitignore into clipboard
  * 
- * 
- * 
  * OnGUI : all open scenes from scene manager
  * SceneHelper
  *      all folder scenes,
@@ -41,9 +39,7 @@ namespace OliverBeebe.UnityUtilities.Editor
         {
             var window = CreateWindow<SceneLoader>(Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll"));
 
-            var icon =
-                Resources.Load<Texture2D>("Scene Loader Icon");
-                //EditorGUIUtility.Load(windowIconPath) as Texture2D;
+            var icon = Resources.Load<Texture2D>(iconResourceName);
             window.titleContent = new("Scene Loader", icon, "Utility window for loading and managing scenes.");
             window.cachedStyleAndContent = false;
             window.GetWindowStateCache();
@@ -148,9 +144,9 @@ namespace OliverBeebe.UnityUtilities.Editor
             sceneCachePath = sceneLoaderCachesDirectory + "/Scene Caches/Scene Cache.asset",
             stateCachePath = sceneLoaderCachesDirectory + "/Window State Cache.asset",
 
-            windowIconPath = "Assets/Oliver-Unity-Utilities/Editor/Scene Loader/Resources/Scene Loader Icon.png",
+            iconResourceName = "Scene Loader Icon",
 
-            gitIgnore = "# Ignore Scene Loader caches\n/" + sceneLoaderCachesDirectory;
+            gitIgnore = "# Ignore Scene Loader caches\nAssets/" + sceneLoaderCachesDirectory;
 
         private const float
 
