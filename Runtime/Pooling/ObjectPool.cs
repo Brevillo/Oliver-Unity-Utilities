@@ -104,5 +104,24 @@ namespace OliverBeebe.UnityUtilities.Runtime.Pooling
                 inactiveObjects.Push(obj);
             }
         }
+
+        /// <summary> Remove an object from the pool. <para> This empties and refills the inactive objects stack. </para></summary>
+        /// <param name="obj"> The object to remove. </param>
+        public void Remove(T obj)
+        {
+            if (activeObjects.Remove(obj))
+            {
+                return;
+            }
+
+            var inactiveObjectsList = new List<T>(inactiveObjects);
+            inactiveObjectsList.Remove(obj);
+
+            inactiveObjects.Clear();
+            foreach (var inactiveObj in inactiveObjectsList)
+            {
+                inactiveObjects.Push(inactiveObj);
+            }
+        }
     }
 }
