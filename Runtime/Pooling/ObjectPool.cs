@@ -69,6 +69,28 @@ namespace OliverBeebe.UnityUtilities.Runtime.Pooling
             }
         }
 
+        /// <summary> Return all objects to the pool. </summary>
+        public void ReturnAll()
+        {
+            foreach (var obj in activeObjects)
+            {
+                inactiveObjects.Push(obj);
+            }
+
+            activeObjects.Clear();
+        }
+
+        /// <summary> Retrieve all objects from the pool. </summary>
+        public T[] RetrieveAll()
+        {
+            while (inactiveObjects.Count > 0)
+            {
+                activeObjects.Add(inactiveObjects.Pop());
+            }
+
+            return activeObjects.ToArray();
+        }
+
         /// <summary> Clears all the items from the pool. </summary>
         /// <param name="action"> An optional delegate to run on all the objects before they are cleared. </param>
         public void Clear(Action<T> action = null)
