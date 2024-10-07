@@ -209,6 +209,8 @@ public class FlexibleGridLayout : LayoutGroup
         {
             serializedObject.Update();
 
+            EditorGUI.BeginChangeCheck();
+
             Property(paddingProp);
             Property(spacingProp);
             Property(startCornerProp);
@@ -226,7 +228,10 @@ public class FlexibleGridLayout : LayoutGroup
             Property(matchHeightProp);
             Property(cellHeightProp, !grid.matchHeight);
 
-            serializedObject.ApplyModifiedProperties();
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+            }
         }
     }
 
