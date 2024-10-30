@@ -24,7 +24,7 @@ namespace OliverBeebe.UnityUtilities.Editor
                     = folderPath == "Assets" ? "Assets"
                     : folderPath == "Assets/Scenes" ? "Scenes"
                     : folderPath
-                    .Split('/')
+                    .Split('/', '\\')
                     .SelectMany(name => name.Split(' '))
                     .Where(name => name != "Scenes")                    // remove "scenes"
                     .Where(name => name != "Assets")                    // remove "assets"
