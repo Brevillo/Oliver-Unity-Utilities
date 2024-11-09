@@ -10,6 +10,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         [SerializeField] private DebugWindowReferences references;
         [SerializeField] private PanelSettings panelSettings;
 
+        private bool visible;
+        private static RuntimeDebugWindow I;
+
+        public static bool Visible => I != null && I.visible;
+
         private const float doublePressTime = 0.25f;
         private const KeyCode keyCode = KeyCode.BackQuote;
 
@@ -41,6 +46,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             document.rootVisualElement.style.display = DisplayStyle.None;
 
             window.window = new(document.rootVisualElement, window.references, runtimeModules);
+            I = window;
         }
 
         private float pressTimer;
@@ -55,6 +61,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             void SetVisible(bool visible)
             {
                 document.rootVisualElement.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                this.visible = visible;
             }
 
             bool pressed = Input.GetKeyDown(keyCode);
