@@ -95,3 +95,7 @@ Button:hover {
 .consoleText {
     -unity-text-align: middle-left;
 }
+
+Button:active {
+    background-color: rgb(89, 89, 89);
+}

@@ -72,31 +72,44 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                     .Select(member => (member, attribute: member.GetCustomAttribute<DebugWindowAttribute>()))
                     .Where(member => member.attribute != null)
                     .ToArray();
-
-                VisualElement element = null;
                 foreach (var (member, attribute) in attributedMembers)
                 {
+                    VisualElement GetLabel()
+                    {
+                        var parent = new VisualElement();
+                        parent.style.flexDirection = FlexDirection.Row;
+
+                        var label = new Label(obj.name);
+                        label.AddToClassList("Label");
+                        label.style.width = new Length(25, LengthUnit.Percent);
+                        parent.Add(label);
+
+                        objectInfo.elements.Add(parent);
+                        instanceMembers.Add(parent);
+
+                        return parent;
+                    }
+
+                    VisualElement fieldElement = null;
+
                     switch (member)
                     {
                         case MethodInfo method:
 
                             if (method.GetParameters().Length > 0) continue;
 
-                            element = AddMethod(obj, instanceMembers, method);;
+                            fieldElement = AddMethod(obj, GetLabel(), method);
 
                             break;
 
                         case FieldInfo field:
 
-                            element = AddField(obj, instanceMembers, field, field.IsPublic || field.GetCustomAttribute<SerializeField>() != null);
+                            fieldElement = AddField(obj, GetLabel(), field, field.IsPublic || field.GetCustomAttribute<SerializeField>() != null);
 
                             break;
                     }
 
-                    if (element != null)
-                    {
-                        objectInfo.elements.Add(element);
-                    }
+                    fieldElement.style.flexGrow = 1;
                 }
 
                 objectInfos.Add(objectInfo);
