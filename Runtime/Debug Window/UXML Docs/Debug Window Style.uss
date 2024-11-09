@@ -54,6 +54,18 @@ TextElement {
     padding-left: 0;
     background-color: rgba(34, 34, 34, 0.5);
     color: rgb(27, 27, 27);
+    border-top-color: rgb(13, 13, 13);
+    border-bottom-color: rgb(33, 33, 33);
+    border-right-color: rgb(33, 33, 33);
+    border-left-color: rgb(33, 33, 33);
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
 }
 
 ObjectField {
@@ -62,6 +74,10 @@ ObjectField {
 
 .unity-text-element {
     color: rgb(204, 204, 204);
+}
+
+.consoleText {
+    -unity-text-align: middle-left;
 }
 
 Button {
@@ -92,10 +108,6 @@ Button:hover {
     background-color: rgb(102, 102, 102);
 }
 
-.consoleText {
-    -unity-text-align: middle-left;
-}
-
 Button:active {
-    background-color: rgb(89, 89, 89);
+    background-color: rgb(70, 94, 118);
 }

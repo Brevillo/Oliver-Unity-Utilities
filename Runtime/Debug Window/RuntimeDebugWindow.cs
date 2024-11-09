@@ -13,7 +13,28 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         private bool visible;
         private static RuntimeDebugWindow I;
 
-        public static bool Visible => I != null && I.visible;
+        public static bool Visible
+        {
+            get => I != null && I.visible;
+            private set
+            {
+                if (I == null) return;
+                I.SetVisible(value);
+            }
+        }
+
+        private void SetVisible(bool visible)
+        {
+            this.visible = visible;
+            document.rootVisualElement.style.display = visible
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+
+            if (visible)
+            {
+                window.Update();
+            }
+        }
 
         private const float doublePressTime = 0.25f;
         private const KeyCode keyCode = KeyCode.BackQuote;
@@ -30,8 +51,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             #endif
         };
 
-        [RuntimeInitializeOnLoadMethod]
-        private static void SpawnRuntimeDebugWindow()
+        public static void Spawn()
         {
             var windowHost = new GameObject("Runtime Debug Window");
             DontDestroyOnLoad(windowHost);
@@ -58,27 +78,21 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         {
             window.Update();
 
-            void SetVisible(bool visible)
-            {
-                document.rootVisualElement.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-                this.visible = visible;
-            }
-
             bool pressed = Input.GetKeyDown(keyCode);
 
             if (pressed)
             {
-                SetVisible(true);
+                Visible = true;
                 doublePressed = false;
             }
             else if (Input.GetKeyUp(keyCode) && !doublePressed)
             {
-                SetVisible(false);
+                Visible = false;
             }
 
             if (pressed && pressTimer < doublePressTime)
             {
-                SetVisible(!doublePressed);
+                Visible = !doublePressed;
                 pressTimer = Mathf.Infinity;
                 doublePressed = true;
             }
