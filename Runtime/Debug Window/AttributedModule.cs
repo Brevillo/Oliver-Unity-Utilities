@@ -9,6 +9,7 @@ using Object = UnityEngine.Object;
 
 namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 {
+    [Serializable]
     public class AttributedModule : DefaultModule
     {
         public override string Name => "Attributed Members";
@@ -16,9 +17,12 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         private VisualElement staticMembers;
         private VisualElement instanceMembers;
 
-        private readonly List<ObjectInfo> objectInfos;
+        private
+            //readonly
+            List<ObjectInfo> objectInfos;
 
-        private struct ObjectInfo
+        [Serializable]
+        private class ObjectInfo
         {
             public Object obj;
             public List<VisualElement> elements;
@@ -41,11 +45,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
             objectInfos.RemoveAll(objectInfo =>
             {
-                if (!newObjects.Any(obj => obj == objectInfo.obj))
+                if (objectInfo.obj == null || !newObjects.Any(obj => obj == objectInfo.obj))
                 {
                     foreach (var element in objectInfo.elements)
                     {
-                        staticMembers.Remove(element);
+                        instanceMembers.Remove(element);
                     }
 
                     return true;
@@ -88,11 +92,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
                             break;
                     }
-                }
 
-                if (element != null)
-                {
-                    objectInfo.elements.Add(element);
+                    if (element != null)
+                    {
+                        objectInfo.elements.Add(element);
+                    }
                 }
 
                 objectInfos.Add(objectInfo);
@@ -103,17 +107,19 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         {
             root = base.CreateGUIInternal(root);
 
-            staticMembers = new Foldout()
+            var staticMembersFoldout = new Foldout()
             {
                 text = "Static",
             };
-            root.Add(staticMembers);
+            root.Add(staticMembersFoldout);
+            staticMembers = staticMembersFoldout.Q("unity-content");
 
-            instanceMembers = new Foldout
+            var instanceMembersFoldout = new Foldout
             {
                 text = "Instance",
             };
-            root.Add(instanceMembers);
+            root.Add(instanceMembersFoldout);
+            instanceMembers = instanceMembersFoldout.Q("unity-content");
 
             objectInfos.Clear();
 

@@ -7,6 +7,7 @@ using System;
 
 namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 {
+    [Serializable]
     public class DebugWindow
     {
         private readonly DebugWindowReferences references;
@@ -14,6 +15,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private readonly Module[] modules;
         private readonly Separator[] separators;
+
+        private AttributedModule attributed;
 
         private readonly Setting<float>[] moduleWidthSettings;
 
@@ -82,6 +85,8 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 .Where(type => type.IsSubclassOf(typeof(Module)))
                 .Select(type => type.GetConstructor(new[] { typeof(DebugWindowReferences) }).Invoke(new object[] { references }) as Module)
                 .ToArray();
+
+            attributed = modules.OfType<AttributedModule>().FirstOrDefault();
 
             separators = new Separator[moduleTypes.Length - 1];
 
