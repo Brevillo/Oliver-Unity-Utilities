@@ -76,8 +76,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private void Update()
         {
-            window.Update();
-
             bool pressed = Input.GetKeyDown(keyCode);
 
             if (pressed)
