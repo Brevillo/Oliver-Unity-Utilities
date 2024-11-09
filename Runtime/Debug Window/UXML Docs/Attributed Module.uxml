@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="Attributed" class="debugWindowSection">
+        <ui:Label tabindex="-1" text="Attributed Members" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Label" />
+        <ui:ScrollView>
+            <ui:VisualElement name="AttributedMembers" style="flex-grow: 1;">
+                <ui:VisualElement name="StaticMembers" style="flex-grow: 1;">
+                    <ui:Label tabindex="-1" text="Static Members" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+                </ui:VisualElement>
+                <ui:VisualElement style="height: 10px;" />
+                <ui:VisualElement name="InstanceMembers" style="flex-grow: 1;">
+                    <ui:Label tabindex="-1" text="Instance" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Label" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

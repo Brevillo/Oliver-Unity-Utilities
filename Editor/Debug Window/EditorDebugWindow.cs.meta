@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 8b5876c7c5ad2481084d72208705acfd
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_ViewDataDictionary: {instanceID: 0}
+  - references: {fileID: 11400000, guid: def1f6b8de5814461bd8b44214e35685, type: 2}
+  - uxml: {fileID: 9197481963319205126, guid: 9a097c1e180a2408b84523205160dc49, type: 3}
+  - consoleElement: {fileID: 9197481963319205126, guid: 1a0ad63eeb53c457494b866b1b1eef6b, type: 3}
+  - debugFunctionButton: {fileID: 9197481963319205126, guid: a4a7ee7a04afa49eda5d3bd104104671, type: 3}
+  - componentSection: {fileID: 9197481963319205126, guid: aac3a063955424de6988df8085fe3d93, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

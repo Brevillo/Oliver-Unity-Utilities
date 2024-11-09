@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec03a235ba5f543b69518b036b620b14, type: 3}
+  m_Name: Debug Window References
+  m_EditorClassIdentifier: 
+  uxml: {fileID: 9197481963319205126, guid: 9a097c1e180a2408b84523205160dc49, type: 3}
+  consoleElement: {fileID: 9197481963319205126, guid: 1a0ad63eeb53c457494b866b1b1eef6b, type: 3}
+  debugFunctionButton: {fileID: 9197481963319205126, guid: a4a7ee7a04afa49eda5d3bd104104671, type: 3}
+  componentSection: {fileID: 9197481963319205126, guid: aac3a063955424de6988df8085fe3d93, type: 3}
+  moduleSeparator: {fileID: 9197481963319205126, guid: 053b584a9204341fc963d7d1d6026cf7, type: 3}
+  defaultModule: {fileID: 9197481963319205126, guid: bf5625eeddfe34bb08539c8b170ce3fe, type: 3}

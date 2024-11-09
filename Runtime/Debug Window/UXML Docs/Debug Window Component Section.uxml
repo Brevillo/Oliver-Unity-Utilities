@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Oliver-Unity-Utilities/Editor/Debug%20Window/DebugWindow.uss?fileID=7433441132597879392&amp;guid=9380e58f24c74471f9e247ec39b49185&amp;type=3#DebugWindow" />
+    <ui:Foldout text="Foldout" name="Label" value="true" class="componentSectionFoldout">
+        <ui:VisualElement name="Content" style="flex-grow: 1;" />
+    </ui:Foldout>
+</ui:UXML>

@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Oliver-Unity-Utilities/Runtime/Debug%20Window/UXML%20Docs/Debug%20Window%20Style.uss?fileID=7433441132597879392&amp;guid=9380e58f24c74471f9e247ec39b49185&amp;type=3#Debug Window Style" />
+    <ui:VisualElement name="Console" class="debugWindowSection">
+        <ui:Label tabindex="-1" text="Console" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+        <ui:ScrollView view-data-key="ConsoleScroll" style="flex-grow: 1;">
+            <ui:VisualElement name="ConsoleElements" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

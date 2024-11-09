@@ -1,0 +1,97 @@
+.debugWindowSection {
+    overflow: hidden;
+}
+
+.componentSectionFoldout {
+    background-color: rgba(255, 255, 255, 0.05);
+    margin-top: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+    padding-top: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    padding-left: 5px;
+    transition-duration: 1s;
+    transition-delay: 0.1s;
+    transition-property: flex-grow;
+}
+
+.toolbarButton {
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+}
+
+.unity-base-field {
+}
+
+Label {
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+}
+
+TextElement {
+    padding-right: 3px;
+    padding-left: 3px;
+}
+
+#unity-text-input {
+    margin-top: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
+    padding-top: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    background-color: rgba(34, 34, 34, 0.5);
+    color: rgb(27, 27, 27);
+}
+
+ObjectField {
+    height: 0;
+}
+
+.unity-text-element {
+    color: rgb(204, 204, 204);
+}
+
+Button {
+    background-color: rgb(88, 88, 88);
+    border-left-color: rgb(48, 48, 48);
+    border-right-color: rgb(48, 48, 48);
+    border-top-color: rgb(48, 48, 48);
+    border-bottom-color: rgb(36, 36, 36);
+    margin-top: 1px;
+    margin-right: 3px;
+    margin-bottom: 1px;
+    margin-left: 3px;
+    padding-top: 1px;
+    padding-right: 6px;
+    padding-bottom: 1px;
+    padding-left: 6px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+Button:hover {
+    background-color: rgb(102, 102, 102);
+}
+
+.consoleText {
+    -unity-text-align: middle-left;
+}

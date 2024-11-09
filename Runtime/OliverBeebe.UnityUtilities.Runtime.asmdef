@@ -1,9 +1,7 @@
 {
     "name": "OliverBeebe.UnityUtilities.Runtime",
     "rootNamespace": "OliverBeebe.UnityUtilities.Runtime",
-    "references": [
-        ""
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
