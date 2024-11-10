@@ -41,7 +41,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         public override void Update()
         {
-            var newObjects = Object.FindObjectsOfType<Object>(true);
+            var newObjects = Object.FindObjectsOfType<MonoBehaviour>(true);
 
             objectInfos.RemoveAll(objectInfo =>
             {
