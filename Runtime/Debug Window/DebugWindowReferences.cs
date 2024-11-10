@@ -10,7 +10,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
     {
         public VisualTreeAsset uxml;
         public VisualTreeAsset consoleElement;
-        public VisualTreeAsset debugFunctionButton;
         public VisualTreeAsset componentSection;
 
         public VisualTreeAsset moduleSeparator;

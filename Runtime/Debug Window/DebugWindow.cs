@@ -7,7 +7,6 @@ using System;
 
 namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 {
-    [Serializable]
     public class DebugWindow
     {
         private readonly DebugWindowReferences references;
@@ -15,8 +14,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private readonly Module[] modules;
         private readonly Separator[] separators;
-
-        private AttributedModule attributed;
 
         private readonly Setting<float>[] moduleWidthSettings;
 
@@ -41,10 +38,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
                 this.getValue = getValue;
                 this.setValue = setValue;
+
+                setValue.Invoke(key, getValue.Invoke(key, defaultValue));
             }
 
             public static implicit operator T(Setting<T> setting) => setting.Value;
-
         }
 
         private static Setting<float> FloatSetting(string key, float defaultValue)
@@ -86,8 +84,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 .Select(type => type.GetConstructor(new[] { typeof(DebugWindowReferences) }).Invoke(new object[] { references }) as Module)
                 .ToArray();
 
-            attributed = modules.OfType<AttributedModule>().FirstOrDefault();
-
             separators = new Separator[moduleTypes.Length - 1];
 
             moduleWidthSettings = new Setting<float>[moduleTypes.Length];
@@ -112,29 +108,33 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             var modulesRoot = root.Q("Modules");
             modulesRoot.Clear();
             float widthPercent = 1f / modules.Length * 100;
-            var moduleWidth = new Length(widthPercent, LengthUnit.Percent);
+
+            float sum = 0;
 
             for (int i = 0; i < modules.Length; i++)
             {
                 var module = modules[i];
+
+                moduleWidthSettings[i] = FloatSetting($"DebugWindowModuleWidth{i}", widthPercent);
 
                 if (i != 0)
                 {
                     references.moduleSeparator.CloneTree(modulesRoot, out int separatorFirstElementIndex, out _);
 
                     var separatorElement = modulesRoot.ElementAt(separatorFirstElementIndex);
-                    var separator = new Separator(i * widthPercent, module, separatorElement);
                     int separatorIndex = i - 1;
+                    var separator = new Separator(sum, module, separatorElement);
 
                     separatorElement.AddManipulator(new WindowDragger(Color.white, Color.HSVToRGB(0, 0, 0.1f), value => AdjustSeparators(separatorIndex, value)));
 
                     separators[separatorIndex] = separator;
                 }
 
-                moduleWidthSettings[i] = FloatSetting($"DebugWindowModuleWidth{i}", widthPercent);
-
+                float moduleWidth = moduleWidthSettings[i].Value;
                 module.CreateGUI(modulesRoot);
-                module.Root.style.width = new Length(moduleWidthSettings[i], LengthUnit.Percent);
+                module.Root.style.width = new Length(moduleWidth, LengthUnit.Percent);
+
+                sum += moduleWidth;
             }
         }
 
@@ -151,28 +151,22 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private void RecalculateModulePositions()
         {
-            float windowWidth = root.layout.width;
-
-            var activeSeparators = separators.Where(separator => separator.element.visible).ToArray();
-            var activeModules = modules.Where(module => module.Root.visible).ToArray();
-
-            int activeSeparatorCount = activeSeparators.Length;
-            for (int i = 0; i < activeSeparatorCount; i++)
+            for (int i = 0; i < separators.Length; i++)
             {
-                float prev = i == 0 ? 0 : activeSeparators[i - 1].percent;
-                float next = i == activeSeparatorCount - 1 ? 100 : activeSeparators[i + 1].percent;
+                float prev = i == 0 ? 0 : separators[i - 1].percent;
+                float next = i == separators.Length - 1 ? 100 : separators[i + 1].percent;
+                var separator = separators[i];
 
-                var sep = activeSeparators[i];
-                sep.percent = Mathf.Clamp(sep.percent, prev, next);
+                separator.percent = Mathf.Clamp(separator.percent, prev, next);
             }
 
-            int activeModuleCount = activeModules.Length;
-            for (int i = 0; i < activeModuleCount; i++)
+            for (int i = 0; i < modules.Length; i++)
             {
-                float prev = i == 0 ? 0 : activeSeparators[i - 1].percent;
-                float next = i >= activeSeparators.Length ? 100 : activeSeparators[i].percent;
+                float prev = i == 0 ? 0 : separators[i - 1].percent;
+                float next = i >= separators.Length ? 100 : separators[i].percent;
                 float widthPercent = next - prev;
-                activeModules[i].Root.style.width = new Length(widthPercent, LengthUnit.Percent);
+
+                modules[i].Root.style.width = new Length(widthPercent, LengthUnit.Percent);
                 moduleWidthSettings[i].Value = widthPercent;
             }
         }

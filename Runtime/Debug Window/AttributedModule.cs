@@ -9,7 +9,6 @@ using Object = UnityEngine.Object;
 
 namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 {
-    [Serializable]
     public class AttributedModule : DefaultModule
     {
         public override string Name => "Attributed Members";
@@ -17,11 +16,50 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         private VisualElement staticMembers;
         private VisualElement instanceMembers;
 
-        private
-            //readonly
-            List<ObjectInfo> objectInfos;
+        private readonly List<ObjectInfo> objectInfos;
 
-        [Serializable]
+        private readonly Dictionary<Type, Member[]> cachedReflections;
+
+        private abstract class Member
+        {
+            public readonly DebugWindowAttribute attribute;
+
+            public Member(DebugWindowAttribute attribute)
+                => this.attribute = attribute;
+
+            public abstract VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent);
+        }
+
+        private class Method : Member
+        {
+            public readonly MethodInfo method;
+
+            public Method(DebugWindowAttribute attribute, MethodInfo method) : base(attribute)
+                => this.method = method;
+
+            public override VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent)
+            {
+                return AddMethod(context, parent, method);
+            }
+        }
+
+        private class Field : Member
+        {
+            public readonly FieldInfo field;
+            private readonly bool serialized;
+
+            public Field(DebugWindowAttribute attribute, FieldInfo field) : base(attribute)
+            {
+                this.field = field;
+                serialized = field.IsPublic || field.GetCustomAttribute<SerializeField>() != null;
+            }
+
+            public override VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent)
+            {
+                return AddField(context, parent, field, serialized);
+            }
+        }
+
         private class ObjectInfo
         {
             public Object obj;
@@ -37,6 +75,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         public AttributedModule(DebugWindowReferences references) : base(references)
         {
             objectInfos = new();
+            cachedReflections = new();
         }
 
         public override void Update()
@@ -66,49 +105,41 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 }
 
                 var objectInfo = new ObjectInfo(obj);
+                var type = obj.GetType();
 
-                var attributedMembers = obj.GetType()
-                    .GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                    .Select(member => (member, attribute: member.GetCustomAttribute<DebugWindowAttribute>()))
-                    .Where(member => member.attribute != null)
-                    .ToArray();
-                foreach (var (member, attribute) in attributedMembers)
+                if (!cachedReflections.TryGetValue(type, out var attributedMembers))
                 {
-                    VisualElement GetLabel()
-                    {
-                        var parent = new VisualElement();
-                        parent.style.flexDirection = FlexDirection.Row;
+                    attributedMembers = type
+                        .GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                        .Select(member => (member, attribute: member.GetCustomAttribute<DebugWindowAttribute>()))
+                        .Where(member => member.attribute != null)
+                        .Where(member => member.member is not MethodInfo method || method.GetParameters().Length == 0)
+                        .Select(member => member.member switch
+                        {
+                            MethodInfo method => new Method(member.attribute, method),
+                            FieldInfo field => new Field(member.attribute, field),
+                            _ => (Member)null,
+                        })
+                        .Where(member => member != null)
+                        .ToArray();
 
-                        var label = new Label(obj.name);
-                        label.AddToClassList("Label");
-                        label.style.width = new Length(25, LengthUnit.Percent);
-                        parent.Add(label);
+                    cachedReflections.Add(type, attributedMembers);
+                }
 
-                        objectInfo.elements.Add(parent);
-                        instanceMembers.Add(parent);
+                foreach (var member in attributedMembers)
+                {
+                    var fieldParent = new VisualElement();
+                    fieldParent.style.flexDirection = FlexDirection.Row;
 
-                        return parent;
-                    }
+                    var label = new Label(obj.name);
+                    label.AddToClassList("Label");
+                    label.style.width = new Length(25, LengthUnit.Percent);
+                    fieldParent.Add(label);
 
-                    VisualElement fieldElement = null;
+                    objectInfo.elements.Add(fieldParent);
+                    instanceMembers.Add(fieldParent);
 
-                    switch (member)
-                    {
-                        case MethodInfo method:
-
-                            if (method.GetParameters().Length > 0) continue;
-
-                            fieldElement = AddMethod(obj, GetLabel(), method);
-
-                            break;
-
-                        case FieldInfo field:
-
-                            fieldElement = AddField(obj, GetLabel(), field, field.IsPublic || field.GetCustomAttribute<SerializeField>() != null);
-
-                            break;
-                    }
-
+                    var fieldElement = member.AddMember(obj, objectInfo, fieldParent);
                     fieldElement.style.flexGrow = 1;
                 }
 

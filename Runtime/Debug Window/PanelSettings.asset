@@ -26,7 +26,7 @@ MonoBehaviour:
   m_TargetDisplay: 0
   m_ClearDepthStencil: 1
   m_ClearColor: 0
-  m_ColorClearValue: {r: 0, g: 0, b: 0, a: 0}
+  m_ColorClearValue: {r: 0.21960784, g: 0.21960784, b: 0.21960784, a: 0.27058825}
   m_DynamicAtlasSettings:
     m_MinAtlasSize: 64
     m_MaxAtlasSize: 4096
