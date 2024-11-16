@@ -116,11 +116,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 { typeof(AnimationCurve ), () => new FieldConstructor<AnimationCurve  , CurveField        >() },
                 { typeof(Gradient       ), () => new FieldConstructor<Gradient        , GradientField     >() },
                 { typeof(LayerMask      ), () => new FieldConstructor<int             , LayerMaskField    >() },
+                { typeof(Color          ), () => new FieldConstructor<Color           , ColorField        >() },
                 #endif
 
                 { typeof(Bounds         ), () => new FieldConstructor<Bounds          , BoundsField       >() },
                 { typeof(BoundsInt      ), () => new FieldConstructor<BoundsInt       , BoundsIntField    >() },
-                { typeof(Color          ), () => new FieldConstructor<Color           , ColorField        >() },
                 { typeof(float          ), () => new FieldConstructor<float           , FloatField        >() },
                 { typeof(Hash128        ), () => new FieldConstructor<Hash128         , Hash128Field      >() },
                 { typeof(int            ), () => new FieldConstructor<int             , IntegerField      >() },
