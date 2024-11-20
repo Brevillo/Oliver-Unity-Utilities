@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement class="debugWindowSection">
         <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ModuleTitle" style="background-color: rgba(0, 0, 0, 0.3); margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 3px; padding-right: 3px; padding-bottom: 3px; padding-left: 3px; -unity-font-style: bold; -unity-text-align: upper-center;" />
-        <ui:ScrollView>
+        <ui:ScrollView name="ScrollView">
             <ui:VisualElement name="Content" style="flex-grow: 1;" />
         </ui:ScrollView>
     </ui:VisualElement>

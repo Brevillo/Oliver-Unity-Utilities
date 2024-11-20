@@ -15,6 +15,10 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         private readonly Module[] modules;
         private readonly Separator[] separators;
 
+        private Slider windowAlphaSlider;
+        private Setting<float> windowAlphaSetting;
+        private VisualElement background;
+
         private readonly Setting<float>[] moduleWidthSettings;
 
         private readonly struct Setting<T>
@@ -41,8 +45,6 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
                 setValue.Invoke(key, getValue.Invoke(key, defaultValue));
             }
-
-            public static implicit operator T(Setting<T> setting) => setting.Value;
         }
 
         private static Setting<float> FloatSetting(string key, float defaultValue)
@@ -105,6 +107,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
             root.Q<Button>("Refresh").clicked += OnRefreshClicked;
 
+            windowAlphaSlider = root.Q<Slider>("WindowAlpha");
+            windowAlphaSetting = FloatSetting("Window Alpha", 0.95f);
+            windowAlphaSlider.RegisterValueChangedCallback(WindowAlphaChanged);
+            windowAlphaSlider.SetValueWithoutNotify(windowAlphaSetting.Value);
+
+            background = root.Q("Background");
+            SetWindowAlpha(windowAlphaSetting.Value);
+
             var modulesRoot = root.Q("Modules");
             modulesRoot.Clear();
             float widthPercent = 1f / modules.Length * 100;
@@ -136,6 +146,17 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
                 sum += moduleWidth;
             }
+        }
+
+        private void WindowAlphaChanged(ChangeEvent<float> changeEvent)
+        {
+            SetWindowAlpha(changeEvent.newValue);
+        }
+
+        private void SetWindowAlpha(float alpha)
+        {
+            windowAlphaSetting.Value = alpha;
+            background.style.backgroundColor = new Color(0, 0, 0, alpha);
         }
 
         private void AdjustSeparators(int index, float value)

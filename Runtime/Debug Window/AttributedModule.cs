@@ -155,15 +155,25 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             {
                 text = "Static",
             };
+            staticMembersFoldout.style.flexGrow = 0;
+
             root.Add(staticMembersFoldout);
-            staticMembers = staticMembersFoldout.Q("unity-content");
+
+            var staticMembersScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+            staticMembersFoldout.Q("unity-content").Add(staticMembersScroll);
+            staticMembers = staticMembersScroll.Q("unity-content-container");
 
             var instanceMembersFoldout = new Foldout
             {
                 text = "Instance",
             };
+            instanceMembersFoldout.style.flexGrow = 0;
+
             root.Add(instanceMembersFoldout);
-            instanceMembers = instanceMembersFoldout.Q("unity-content");
+
+            var instanceMembersScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+            instanceMembersFoldout.Q("unity-content").Add(instanceMembersScroll);
+            instanceMembers = instanceMembersScroll.Q("unity-content-container");
 
             objectInfos.Clear();
 

@@ -36,14 +36,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             }
         }
 
-        private const float doublePressTime = 0.25f;
+        private const float holdTime = 0.25f;
         private const KeyCode keyCode = KeyCode.BackQuote;
 
         private UIDocument document;
 
         private static readonly System.Type[] runtimeModules = new[]
         {
-            typeof(ConsoleModule),
+            //typeof(ConsoleModule),
             typeof(AttributedModule),
 
             #if UNITY_EDITOR
@@ -63,41 +63,41 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             document.panelSettings = window.panelSettings;
 
             window.document = document;
-            document.rootVisualElement.style.display = DisplayStyle.None;
 
             window.window = new(document.rootVisualElement, window.references, runtimeModules);
             I = window;
+
+            Visible = false;
         }
 
-        private float pressTimer;
-        private bool doublePressed;
+        private float holdTimer;
+        private bool holding;
 
         private DebugWindow window;
 
         private void Update()
         {
-            bool pressed = Input.GetKeyDown(keyCode);
-
-            if (pressed)
+            if (Input.GetKeyDown(keyCode))
             {
-                Visible = true;
-                doublePressed = false;
+                Visible = !Visible;
+
+                holdTimer = 0;
+                holding = false;
             }
-            else if (Input.GetKeyUp(keyCode) && !doublePressed)
+
+            holdTimer += Time.deltaTime;
+
+            bool pressing = Input.GetKey(keyCode);
+
+            if (pressing && holdTimer > holdTime)
+            {
+                holding = true;
+            }
+
+            if (!pressing && holding)
             {
                 Visible = false;
             }
-
-            if (pressed && pressTimer < doublePressTime)
-            {
-                Visible = !doublePressed;
-                pressTimer = Mathf.Infinity;
-                doublePressed = true;
-            }
-
-            pressTimer = pressed
-                ? 0
-                : pressTimer + Time.deltaTime;
         }
     }
 }

@@ -173,7 +173,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                     .ToArray();
 
                 void AddFields((string name, bool serialized, FieldInfo[] fields) parameters, VisualElement parent)
-                    => PopulateFoldout(parameters.name, parent, parameters.fields, (field, content) => AddField(context, content, field, parameters.serialized));
+                    => PopulateFoldout(parameters.name, parent, parameters.fields, (field, content) => AddField(context, content, field, parameters.serialized), scroll: true);
 
                 PopulateFoldout(name, parent, fields, AddFields, true);
             }
@@ -189,12 +189,12 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                     .ToArray();
 
                 void AddMethods((string name, MethodInfo[] methods) parameters, VisualElement parent)
-                    => PopulateFoldout(parameters.name, parent, parameters.methods, (method, content) => AddMethod(context, content, method as MethodInfo));
+                    => PopulateFoldout(parameters.name, parent, parameters.methods, (method, content) => AddMethod(context, content, method), scroll: true);
 
                 PopulateFoldout(name, parent, methods, AddMethods, false);
             }
 
-            static void PopulateFoldout<T>(string name, VisualElement parent, T[] things, Action<T, VisualElement> addAction, bool open = true)
+            static void PopulateFoldout<T>(string name, VisualElement parent, T[] things, Action<T, VisualElement> addAction, bool open = true, bool scroll = false)
             {
                 if (things.Length == 0)
                 {
@@ -207,9 +207,22 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                     value = open,
                 };
 
+                VisualElement content;
+
+                if (scroll)
+                {
+                    var scrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+                    foldout.Q("unity-content").Add(scrollView);
+
+                    content = scrollView.Q("unity-content-container");
+                }
+                else
+                {
+                    content = foldout.Q("unity-content");
+                }
+
                 parent.Add(foldout);
 
-                var content = foldout.Q("unity-content");
 
                 foreach (var thing in things)
                 {
