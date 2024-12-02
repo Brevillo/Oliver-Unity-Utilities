@@ -36,6 +36,7 @@ Label {
     padding-right: 0;
     padding-bottom: 0;
     padding-left: 0;
+    -unity-text-align: middle-left;
 }
 
 TextElement {

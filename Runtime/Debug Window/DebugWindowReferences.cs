@@ -15,5 +15,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         public VisualTreeAsset moduleSeparator;
 
         public VisualTreeAsset defaultModule;
+
+        public PanelSettings panelSettings;
     }
 }

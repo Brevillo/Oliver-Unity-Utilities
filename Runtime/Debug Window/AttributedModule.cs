@@ -15,29 +15,31 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private VisualElement staticMembers;
         private VisualElement instanceMembers;
-
-        private readonly List<ObjectInfo> objectInfos;
-
+        
         private readonly Dictionary<Type, Member[]> cachedReflections;
+
+        private MonoBehaviour[] previousObjects;
+        
+        #region Caches
 
         private abstract class Member
         {
             public readonly DebugWindowAttribute attribute;
 
-            public Member(DebugWindowAttribute attribute)
+            protected Member(DebugWindowAttribute attribute)
                 => this.attribute = attribute;
 
-            public abstract VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent);
+            public abstract VisualElement AddMember(Object context, VisualElement parent);
         }
 
         private class Method : Member
         {
-            public readonly MethodInfo method;
+            private readonly MethodInfo method;
 
             public Method(DebugWindowAttribute attribute, MethodInfo method) : base(attribute)
                 => this.method = method;
 
-            public override VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent)
+            public override VisualElement AddMember(Object context, VisualElement parent)
             {
                 return AddMethod(context, parent, method);
             }
@@ -45,7 +47,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private class Field : Member
         {
-            public readonly FieldInfo field;
+            private readonly FieldInfo field;
             private readonly bool serialized;
 
             public Field(DebugWindowAttribute attribute, FieldInfo field) : base(attribute)
@@ -54,57 +56,37 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 serialized = field.IsPublic || field.GetCustomAttribute<SerializeField>() != null;
             }
 
-            public override VisualElement AddMember(Object context, ObjectInfo objectInfo, VisualElement parent)
+            public override VisualElement AddMember(Object context, VisualElement parent)
             {
                 return AddField(context, parent, field, serialized);
             }
         }
 
-        private class ObjectInfo
-        {
-            public Object obj;
-            public List<VisualElement> elements;
-
-            public ObjectInfo(Object obj)
-            {
-                this.obj = obj;
-                elements = new();
-            }
-        }
+        #endregion
 
         public AttributedModule(DebugWindowReferences references) : base(references)
         {
-            objectInfos = new();
             cachedReflections = new();
         }
 
         public override void Update()
         {
             var newObjects = Object.FindObjectsOfType<MonoBehaviour>(true);
-
-            objectInfos.RemoveAll(objectInfo =>
+            
+            bool identical = previousObjects != null && newObjects.All(previousObjects.Contains) && previousObjects.All(newObjects.Contains);
+            previousObjects = newObjects;
+            
+            if (identical)
             {
-                if (objectInfo.obj == null || !newObjects.Any(obj => obj == objectInfo.obj))
-                {
-                    foreach (var element in objectInfo.elements)
-                    {
-                        instanceMembers.Remove(element);
-                    }
-
-                    return true;
-                }
-
-                return false;
-            });
-
+                return;
+            }
+            
+            instanceMembers.Clear();
+            
+            Dictionary<GameObject, List<(Object obj, Member[] members)>> objects = new();
+            
             foreach (var obj in newObjects)
             {
-                if (objectInfos.Exists(objectInfo => objectInfo.obj == obj))
-                {
-                    continue;
-                }
-
-                var objectInfo = new ObjectInfo(obj);
                 var type = obj.GetType();
 
                 if (!cachedReflections.TryGetValue(type, out var attributedMembers))
@@ -126,24 +108,75 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                     cachedReflections.Add(type, attributedMembers);
                 }
 
-                foreach (var member in attributedMembers)
+                if (!objects.TryGetValue(obj.gameObject, out var scripts))
                 {
-                    var fieldParent = new VisualElement();
-                    fieldParent.style.flexDirection = FlexDirection.Row;
-
-                    var label = new Label(obj.name);
-                    label.AddToClassList("Label");
-                    label.style.width = new Length(25, LengthUnit.Percent);
-                    fieldParent.Add(label);
-
-                    objectInfo.elements.Add(fieldParent);
-                    instanceMembers.Add(fieldParent);
-
-                    var fieldElement = member.AddMember(obj, objectInfo, fieldParent);
-                    fieldElement.style.flexGrow = 1;
+                    scripts = new();
+                    objects.Add(obj.gameObject, scripts);
                 }
 
-                objectInfos.Add(objectInfo);
+                scripts.Add((obj, attributedMembers));
+            }
+
+            foreach (var (gameObject, scripts) in objects)
+            {
+                var allMembers = scripts.SelectMany(script => script.members.Select(member => (script.obj, member))).ToArray();
+                
+                switch (allMembers.Length)
+                {
+                    case 1:
+                    {
+                        var memberRoot = new VisualElement
+                        {
+                            style =
+                            {
+                                flexDirection = FlexDirection.Row,
+                            },
+                        };
+
+                        var label = new Label(gameObject.name)
+                        {
+                            style =
+                            {
+                                // width = new Length(25, LengthUnit.Percent),
+                            },
+                        };
+                        label.AddToClassList("Label");
+                        memberRoot.Add(label);
+
+                        instanceMembers.Add(memberRoot);
+
+                        AddMember(allMembers[0], memberRoot);
+                        
+                        break;
+                    }
+                    
+                    case > 1:
+                    {
+                        var foldout = new Foldout
+                        {
+                            text = gameObject.name,
+                        };
+
+                        instanceMembers.Add(foldout);
+                        var scroll = new ScrollView(ScrollViewMode.Vertical);
+                        foldout.Q("unity-content").Add(scroll);
+
+                        var membersRoot = scroll.Q("unity-content-container");
+
+                        foreach (var member in allMembers)
+                        {
+                            AddMember(member, membersRoot);
+                        }
+
+                        break;
+                    }
+                }
+
+                void AddMember((Object obj, Member member) memberInfo, VisualElement fieldParent)
+                {
+                    var fieldElement = memberInfo.member.AddMember(memberInfo.obj, fieldParent);
+                    fieldElement.style.flexGrow = 1;
+                }
             }
         }
 
@@ -151,11 +184,14 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         {
             root = base.CreateGUIInternal(root);
 
-            var staticMembersFoldout = new Foldout()
+            var staticMembersFoldout = new Foldout
             {
                 text = "Static",
+                style =
+                {
+                    flexGrow = 0,
+                },
             };
-            staticMembersFoldout.style.flexGrow = 0;
 
             root.Add(staticMembersFoldout);
 
@@ -166,17 +202,18 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             var instanceMembersFoldout = new Foldout
             {
                 text = "Instance",
+                style =
+                {
+                    flexGrow = 0,
+                },
             };
-            instanceMembersFoldout.style.flexGrow = 0;
 
             root.Add(instanceMembersFoldout);
 
             var instanceMembersScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             instanceMembersFoldout.Q("unity-content").Add(instanceMembersScroll);
             instanceMembers = instanceMembersScroll.Q("unity-content-container");
-
-            objectInfos.Clear();
-
+            
             var debugFunctions = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly => assembly.GetTypes())
                 .SelectMany(type => type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))

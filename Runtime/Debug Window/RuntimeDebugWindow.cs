@@ -2,13 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 {
     public class RuntimeDebugWindow : MonoBehaviour
     {
-        [SerializeField] private DebugWindowReferences references;
-        [SerializeField] private PanelSettings panelSettings;
+        public const string enabledPref = "Oliver Utilities RuntimeDebugWindow Enabled";
+
+        #if UNITY_EDITOR
+
+        [MenuItem("Window/Oliver Utilities/Toggle Runtime Debug Window")]
+        private static void ToggleRuntimeDebugWindow()
+        {
+            int enabled = 1 - PlayerPrefs.GetInt(enabledPref, 0);
+            PlayerPrefs.SetInt(enabledPref, enabled);
+
+            Debug.Log($"Runtime Debug Window is {(enabled == 1 ? "ENABLED" : "DISABLED")}");
+        }
+
+        #endif
 
         private bool visible;
         private static RuntimeDebugWindow I;
@@ -43,7 +58,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
 
         private static readonly System.Type[] runtimeModules = new[]
         {
-            //typeof(ConsoleModule),
+            typeof(ConsoleModule),
             typeof(AttributedModule),
 
             #if UNITY_EDITOR
@@ -51,29 +66,36 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             #endif
         };
 
-        public static void Spawn()
+        [RuntimeInitializeOnLoadMethod]
+        private static void Spawn()
         {
-            var windowHost = new GameObject("Runtime Debug Window");
-            DontDestroyOnLoad(windowHost);
+            if (PlayerPrefs.GetInt(enabledPref, 0) == 0)
+            {
+                return;
+            }
 
-            var window = windowHost.AddComponent<RuntimeDebugWindow>();
-            window.enabled = true;
-
-            var document = windowHost.AddComponent<UIDocument>();
-            document.panelSettings = window.panelSettings;
-
-            window.document = document;
-
-            window.window = new(document.rootVisualElement, window.references, runtimeModules);
-            I = window;
-
-            Visible = false;
+            new GameObject("Runtime Debug Window").AddComponent<RuntimeDebugWindow>();
         }
 
         private float holdTimer;
         private bool holding;
 
         private DebugWindow window;
+
+        private void Start()
+        { 
+            document = gameObject.AddComponent<UIDocument>();
+
+            var references = Resources.Load<DebugWindowReferences>("Debug Window References");
+
+            document.panelSettings = references.panelSettings;
+            window = new(document.rootVisualElement, references, runtimeModules);
+
+            DontDestroyOnLoad(this);
+            I = this;
+
+            Visible = false;
+        }
 
         private void Update()
         {
@@ -85,7 +107,7 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
                 holding = false;
             }
 
-            holdTimer += Time.deltaTime;
+            holdTimer += Time.unscaledDeltaTime;
 
             bool pressing = Input.GetKey(keyCode);
 

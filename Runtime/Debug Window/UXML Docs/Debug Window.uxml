@@ -2,7 +2,7 @@
     <ui:Template name="DefaultModule" src="project://database/Assets/Oliver-Unity-Utilities/Runtime/Debug%20Window/UXML%20Docs/Default%20Module.uxml?fileID=9197481963319205126&amp;guid=bf5625eeddfe34bb08539c8b170ce3fe&amp;type=3#Default Module" />
     <ui:Template name="ModuleSeparator" src="project://database/Assets/Oliver-Unity-Utilities/Runtime/Debug%20Window/UXML%20Docs/Module%20Separator.uxml?fileID=9197481963319205126&amp;guid=053b584a9204341fc963d7d1d6026cf7&amp;type=3#Module Separator" />
     <Style src="project://database/Assets/Oliver-Unity-Utilities/Runtime/Debug%20Window/UXML%20Docs/Debug%20Window%20Style.uss?fileID=7433441132597879392&amp;guid=9380e58f24c74471f9e247ec39b49185&amp;type=3#Debug Window Style" />
-    <ui:VisualElement name="Background" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.45);">
+    <ui:VisualElement name="Background" style="flex-grow: 1; background-color: rgb(63, 63, 63);">
         <ui:VisualElement name="Toolbar" style="flex-direction: row; flex-grow: 0; background-color: rgba(0, 0, 0, 0.15); padding-top: 3px; padding-right: 5px; padding-bottom: 3px; padding-left: 5px; border-bottom-width: 2px; border-left-color: rgb(26, 26, 26); border-right-color: rgb(26, 26, 26); border-top-color: rgb(26, 26, 26); border-bottom-color: rgb(26, 26, 26);">
             <ui:Label tabindex="-1" text="Debug Window" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-left; -unity-font-style: bold;" />
             <ui:Button text="Refresh" parse-escape-sequences="true" display-tooltip-when-elided="true" enable-rich-text="true" name="Refresh" />

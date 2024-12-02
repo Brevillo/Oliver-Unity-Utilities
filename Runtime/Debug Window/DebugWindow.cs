@@ -156,7 +156,9 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
         private void SetWindowAlpha(float alpha)
         {
             windowAlphaSetting.Value = alpha;
-            background.style.backgroundColor = new Color(0, 0, 0, alpha);
+            var backgroundColor = Color.HSVToRGB(0, 0, 0.25f);
+            backgroundColor.a = alpha;
+            background.style.backgroundColor = backgroundColor;
         }
 
         private void AdjustSeparators(int index, float value)

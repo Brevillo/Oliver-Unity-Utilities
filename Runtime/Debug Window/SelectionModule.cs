@@ -74,11 +74,11 @@ namespace OliverBeebe.UnityUtilities.Runtime.DebugWindow
             }
 
             // ScriptableObject selection
-            else if (Selection.activeObject is ScriptableObject so)
+            else if (Selection.activeObject is Object obj)
             {
-                label.text = so.name;
+                label.text = obj.name;
 
-                AddObject(so);
+                AddObject(obj);
             }
 
             else
